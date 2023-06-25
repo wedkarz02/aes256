@@ -7,5 +7,13 @@ import (
 )
 
 func main() {
-	fmt.Println(aes256.Hello("wedkarz"))
+	sbox := aes256.NewSBox()
+	for i, el := range sbox {
+		if i%0x10 == 0 {
+			fmt.Println()
+		}
+
+		fmt.Printf("%x\t", el)
+	}
+	fmt.Println()
 }
