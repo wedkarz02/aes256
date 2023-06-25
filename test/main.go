@@ -16,4 +16,16 @@ func main() {
 		fmt.Printf("%x\t", el)
 	}
 	fmt.Println()
+
+	xk, err := aes256.InitExpandedKey([]byte("supersecretkeythathastobe32bytes"))
+	if err != nil {
+		panic(err)
+	}
+
+	for _, row := range *xk {
+		for _, chr := range row {
+			fmt.Printf("%v ", string(chr))
+		}
+		fmt.Println()
+	}
 }

@@ -1,5 +1,7 @@
 package consts
 
 const (
-	KEY_LEN uint8 = 8
+	BLOCK_SIZE          = 16
+	KEY_SIZE            = 32
+	ROUND_KEY_WORD_SIZE = 4
 )
