@@ -17,10 +17,10 @@ func NewInvSBox(sb *sbox.SBOX) *sbox.SBOX {
 	return sbox.InitInvSBOX(sb)
 }
 
-// NewEncKey returns an encryption key expanded by
-// a key schedule to a slice of unique round keys
+// NewEncKey returns a key expanded by a key
+// schedule to a slice of unique round keys
 func NewEncKey(k []byte) (*key.ExpandedKey, error) {
-	xKey, err := key.ExpandEncKey(k)
+	xKey, err := key.ExpandKey(k)
 
 	if err != nil {
 		return nil, err
