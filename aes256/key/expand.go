@@ -8,7 +8,7 @@ import (
 	"github.com/wedkarz02/aes256-go/aes256/sbox"
 )
 
-type ExpandedKey [consts.BLOCK_SIZE * consts.ROUND_KEYS_COUNT]byte
+type ExpandedKey [consts.EXP_KEY_SIZE]byte
 
 func Rcon(idx byte) byte {
 	if idx == 0 {
@@ -91,7 +91,7 @@ func ExpandKey(k []byte) (*ExpandedKey, error) {
 	var a byte
 	var err error
 
-	for c < 240 {
+	for c < consts.EXP_KEY_SIZE {
 		for a = 0; a < consts.ROUND_WORD_SIZE; a++ {
 			tmpKey[a] = xKey[a+c-consts.ROUND_WORD_SIZE]
 		}
