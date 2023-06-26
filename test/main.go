@@ -17,7 +17,7 @@ func main() {
 	}
 	fmt.Println()
 
-	xk, err := aes256.InitExpandedKey([]byte("supersecretkeythathastobe32bytes"))
+	xk, err := aes256.NewEncKey([]byte("supersecretkeythathastobe32bytes"))
 	if err != nil {
 		panic(err)
 	}

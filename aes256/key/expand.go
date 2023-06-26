@@ -8,8 +8,7 @@ import (
 
 type ExpandedKey [][]byte
 
-// todo add err
-func RotateWord(word []byte) ([]byte, error) {
+func RotWord(word []byte) ([]byte, error) {
 	if len(word) != consts.ROUND_KEY_WORD_SIZE {
 		return nil, errors.New("invalid round key word size")
 	}
@@ -35,7 +34,7 @@ func ExpandEncKey(k []byte) (*ExpandedKey, error) {
 
 	j := 0
 	for i := 4; i < len(xKey[0])+1; i += 4 {
-		tmp, err := RotateWord(k[j:i])
+		tmp, err := RotWord(k[j:i])
 		j += 4
 		if err != nil {
 			return nil, errors.New("invalid round key word size")

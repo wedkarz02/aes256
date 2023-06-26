@@ -5,11 +5,15 @@ import (
 	"github.com/wedkarz02/aes256-go/aes256/sbox"
 )
 
+// NewSBox returns a byte slice representation of
+// the AES substitution look up table.
 func NewSBox() *sbox.SBOX {
 	return sbox.InitSBOX()
 }
 
-func InitExpandedKey(k []byte) (*key.ExpandedKey, error) {
+// NewEncKey returns an encryption key expanded by
+// a key schedule to a slice of unique round keys
+func NewEncKey(k []byte) (*key.ExpandedKey, error) {
 	xKey, err := key.ExpandEncKey(k)
 
 	if err != nil {
