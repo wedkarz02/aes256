@@ -59,10 +59,6 @@ func SubWord(word [consts.ROUND_KEY_WORD_SIZE]byte, sbox *sbox.SBOX) ([consts.RO
 	return subw, nil
 }
 
-// Nb = 4
-// Nk = 8
-// Nr = 14
-
 func ExpandKey(k []byte) (*ExpandedKey, error) {
 	if len(k) != consts.KEY_SIZE {
 		return nil, errors.New("invalid key size")
