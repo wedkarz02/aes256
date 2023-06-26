@@ -39,3 +39,13 @@ func InitSBOX() *SBOX {
 
 	return sbox
 }
+
+func InitInvSBOX(sbox *SBOX) *SBOX {
+	invsbox := new(SBOX)
+
+	for i := 0; i < len(sbox); i++ {
+		invsbox[sbox[i]] = byte(i)
+	}
+
+	return invsbox
+}

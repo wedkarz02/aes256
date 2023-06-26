@@ -17,15 +17,13 @@ func main() {
 	}
 	fmt.Println()
 
-	xk, err := aes256.NewEncKey([]byte("supersecretkeythathastobe32bytes"))
-	if err != nil {
-		panic(err)
-	}
-
-	for _, row := range *xk {
-		for _, chr := range row {
-			fmt.Printf("%v ", string(chr))
+	invsbox := aes256.NewInvSBox(sbox)
+	for i, el := range invsbox {
+		if i%0x10 == 0 {
+			fmt.Println()
 		}
-		fmt.Println()
+
+		fmt.Printf("%x\t", el)
 	}
+	fmt.Println()
 }
