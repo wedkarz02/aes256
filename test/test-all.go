@@ -45,11 +45,11 @@ func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
 		}
 	}
 
-	return true, "Done", nil
+	return true, "Correct output", nil
 }
 
 func main() {
-	fmt.Printf("status\tkey_num\tdescription\n")
+	fmt.Printf("Status\tKey_num\tDescription\n")
 
 	for i, k := range testKeys {
 		ok, desc, err := TestKeyExp(k, xTestKeys[i])
@@ -58,6 +58,6 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Printf("%v\t%v\t%v\n", ok, i, desc)
+		fmt.Printf("%v\t%v\t%v\n", map[bool]string{true: "Passed", false: "Failed"}[ok], i, desc)
 	}
 }

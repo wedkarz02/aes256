@@ -4,59 +4,77 @@ import (
 	"errors"
 
 	"github.com/wedkarz02/aes256-go/aes256/consts"
+	"github.com/wedkarz02/aes256-go/aes256/galois"
 	"github.com/wedkarz02/aes256-go/aes256/sbox"
 )
 
-type ExpandedKey [consts.KEY_SIZE * consts.ROUND_KEYS_COUNT]byte
+type ExpandedKey [consts.BLOCK_SIZE * consts.ROUND_KEYS_COUNT]byte
 
-func Rcon(idx byte) []byte {
-	rcon := []byte{0x02, 0x00, 0x00, 0x00}
-
-	if idx == 1 {
-		rcon[0] = 0x01
-		return rcon
+func Rcon(idx byte) byte {
+	if idx == 0 {
+		return 0
 	}
 
-	if idx > 1 {
-		rcon[0] = 0x02
-		idx--
+	var rcon byte = 1
 
-		for idx > 1 {
-			rcon[0] ^= 0x02
-			idx--
-		}
+	for idx != 1 {
+		rcon = galois.Gmul(rcon, 2)
+		idx--
 	}
 
 	return rcon
 }
 
-func RotWord(word [consts.ROUND_KEY_WORD_SIZE]byte) ([consts.ROUND_KEY_WORD_SIZE]byte, error) {
-	if len(word) != consts.ROUND_KEY_WORD_SIZE {
-		return [consts.ROUND_KEY_WORD_SIZE]byte{}, errors.New("invalid round key word size")
+func RotWord(word [consts.ROUND_WORD_SIZE]byte) ([consts.ROUND_WORD_SIZE]byte, error) {
+	if len(word) != consts.ROUND_WORD_SIZE {
+		return [consts.ROUND_WORD_SIZE]byte{}, errors.New("invalid round key word size")
 	}
 
-	var rotated [consts.ROUND_KEY_WORD_SIZE]byte
+	var rotated [consts.ROUND_WORD_SIZE]byte
 
-	for i := 0; i < consts.ROUND_KEY_WORD_SIZE-1; i++ {
+	for i := 0; i < consts.ROUND_WORD_SIZE-1; i++ {
 		rotated[i] = word[i+1]
 	}
 
-	rotated[consts.ROUND_KEY_WORD_SIZE-1] = word[0]
+	rotated[consts.ROUND_WORD_SIZE-1] = word[0]
 	return rotated, nil
 }
 
-func SubWord(word [consts.ROUND_KEY_WORD_SIZE]byte, sbox *sbox.SBOX) ([consts.ROUND_KEY_WORD_SIZE]byte, error) {
-	if len(word) != consts.ROUND_KEY_WORD_SIZE {
-		return [consts.ROUND_KEY_WORD_SIZE]byte{}, errors.New("invalid round key word size")
+func SubWord(word [consts.ROUND_WORD_SIZE]byte, sbox *sbox.SBOX) ([consts.ROUND_WORD_SIZE]byte, error) {
+	if len(word) != consts.ROUND_WORD_SIZE {
+		return [consts.ROUND_WORD_SIZE]byte{}, errors.New("invalid round key word size")
 	}
 
-	var subw [consts.ROUND_KEY_WORD_SIZE]byte
+	var subw [consts.ROUND_WORD_SIZE]byte
 
-	for i := 0; i < consts.ROUND_KEY_WORD_SIZE; i++ {
+	for i := 0; i < consts.ROUND_WORD_SIZE; i++ {
 		subw[i] = sbox[word[i]]
 	}
 
 	return subw, nil
+}
+
+func ScheduleCore(word [consts.ROUND_WORD_SIZE]byte, idx byte) ([consts.ROUND_WORD_SIZE]byte, error) {
+	if len(word) != consts.ROUND_WORD_SIZE {
+		return [consts.ROUND_WORD_SIZE]byte{}, errors.New("invalid round key word size")
+	}
+
+	word, err := RotWord(word)
+
+	if err != nil {
+		return [consts.ROUND_WORD_SIZE]byte{}, err
+	}
+
+	sbox := sbox.InitSBOX()
+	word, err = SubWord(word, sbox)
+
+	if err != nil {
+		return [consts.ROUND_WORD_SIZE]byte{}, err
+	}
+
+	word[0] ^= Rcon(idx)
+
+	return word, nil
 }
 
 func ExpandKey(k []byte) (*ExpandedKey, error) {
@@ -65,53 +83,40 @@ func ExpandKey(k []byte) (*ExpandedKey, error) {
 	}
 
 	var xKey ExpandedKey
-	var tmpKey [consts.ROUND_KEY_WORD_SIZE]byte
-	var err error
 
 	sbox := sbox.InitSBOX()
+	var tmpKey [consts.ROUND_WORD_SIZE]byte
+	var c byte = consts.KEY_SIZE
+	var idx byte = 1
+	var a byte
+	var err error
 
-	for i := 0; i < consts.ROUND_KEY_WORD_COUNT; i++ {
-		xKey[4*i+0] = k[4*i+0]
-		xKey[4*i+1] = k[4*i+1]
-		xKey[4*i+2] = k[4*i+2]
-		xKey[4*i+3] = k[4*i+3]
-	}
+	for c < 240 {
+		for a = 0; a < consts.ROUND_WORD_SIZE; a++ {
+			tmpKey[a] = xKey[a+c-consts.ROUND_WORD_SIZE]
+		}
 
-	byteLength := consts.ROUND_KEYS_COUNT * consts.ROUND_KEY_WORD_COUNT
+		if c%consts.KEY_SIZE == 0 {
+			tmpKey, err = ScheduleCore(tmpKey, idx)
+			idx++
 
-	for i := consts.ROUND_KEY_WORD_COUNT; i < byteLength; i++ {
-		tmpKey[0] = xKey[4*(i-1)+0]
-		tmpKey[1] = xKey[4*(i-1)+1]
-		tmpKey[2] = xKey[4*(i-1)+2]
-		tmpKey[3] = xKey[4*(i-1)+3]
-
-		if i%consts.ROUND_KEY_WORD_COUNT == 0 {
-			tmpKey, err = RotWord(tmpKey)
-			if err != nil {
-				return nil, err
-			}
-
-			tmpKey, err = SubWord(tmpKey, sbox)
-			if err != nil {
-				return nil, err
-			}
-
-			rCon := Rcon(byte(i / consts.ROUND_KEY_WORD_COUNT))
-			tmpKey[0] ^= rCon[0]
-			tmpKey[1] ^= rCon[1]
-			tmpKey[2] ^= rCon[2]
-			tmpKey[3] ^= rCon[3]
-		} else if i%consts.ROUND_KEY_WORD_COUNT == 4 {
-			tmpKey, err = SubWord(tmpKey, sbox)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		xKey[4*i+0] = xKey[4*(i-consts.ROUND_KEY_WORD_COUNT)+0] ^ tmpKey[0]
-		xKey[4*i+1] = xKey[4*(i-consts.ROUND_KEY_WORD_COUNT)+1] ^ tmpKey[1]
-		xKey[4*i+2] = xKey[4*(i-consts.ROUND_KEY_WORD_COUNT)+2] ^ tmpKey[2]
-		xKey[4*i+3] = xKey[4*(i-consts.ROUND_KEY_WORD_COUNT)+3] ^ tmpKey[3]
+		if c%consts.KEY_SIZE == consts.BLOCK_SIZE {
+			tmpKey, err = SubWord(tmpKey, sbox)
+
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		for a = 0; a < consts.ROUND_WORD_SIZE; a++ {
+			xKey[c] = xKey[c-consts.KEY_SIZE] ^ tmpKey[a]
+			c++
+		}
 	}
 
 	return &xKey, nil
