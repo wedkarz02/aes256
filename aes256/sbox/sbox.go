@@ -6,7 +6,6 @@ func RotL8(x byte, shift byte) byte {
 	return byte((x << shift) | (x >> (8 - shift)))
 }
 
-// https://en.wikipedia.org/wiki/Rijndael_S-box
 func InitSBOX() *SBOX {
 	sbox := new(SBOX)
 
