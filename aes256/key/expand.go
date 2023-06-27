@@ -83,6 +83,7 @@ func ExpandKey(k []byte) (*ExpandedKey, error) {
 	}
 
 	var xKey ExpandedKey
+	copy(xKey[:], k)
 
 	sbox := sbox.InitSBOX()
 	var tmpKey [consts.ROUND_WORD_SIZE]byte
