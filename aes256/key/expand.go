@@ -25,51 +25,51 @@ func Rcon(idx byte) byte {
 	return rcon
 }
 
-func RotWord(word [consts.ROUND_WORD_SIZE]byte) ([consts.ROUND_WORD_SIZE]byte, error) {
-	if len(word) != consts.ROUND_WORD_SIZE {
-		return [consts.ROUND_WORD_SIZE]byte{}, errors.New("invalid round key word size")
+func RotWord(word [consts.WORD_SIZE]byte) ([consts.WORD_SIZE]byte, error) {
+	if len(word) != consts.WORD_SIZE {
+		return [consts.WORD_SIZE]byte{}, errors.New("invalid round key word size")
 	}
 
-	var rotated [consts.ROUND_WORD_SIZE]byte
+	var rotated [consts.WORD_SIZE]byte
 
-	for i := 0; i < consts.ROUND_WORD_SIZE-1; i++ {
+	for i := 0; i < consts.WORD_SIZE-1; i++ {
 		rotated[i] = word[i+1]
 	}
 
-	rotated[consts.ROUND_WORD_SIZE-1] = word[0]
+	rotated[consts.WORD_SIZE-1] = word[0]
 	return rotated, nil
 }
 
-func SubWord(word [consts.ROUND_WORD_SIZE]byte, sbox *sbox.SBOX) ([consts.ROUND_WORD_SIZE]byte, error) {
-	if len(word) != consts.ROUND_WORD_SIZE {
-		return [consts.ROUND_WORD_SIZE]byte{}, errors.New("invalid round key word size")
+func SubWord(word [consts.WORD_SIZE]byte, sbox *sbox.SBOX) ([consts.WORD_SIZE]byte, error) {
+	if len(word) != consts.WORD_SIZE {
+		return [consts.WORD_SIZE]byte{}, errors.New("invalid round key word size")
 	}
 
-	var subw [consts.ROUND_WORD_SIZE]byte
+	var subw [consts.WORD_SIZE]byte
 
-	for i := 0; i < consts.ROUND_WORD_SIZE; i++ {
+	for i := 0; i < consts.WORD_SIZE; i++ {
 		subw[i] = sbox[word[i]]
 	}
 
 	return subw, nil
 }
 
-func ScheduleCore(word [consts.ROUND_WORD_SIZE]byte, idx byte) ([consts.ROUND_WORD_SIZE]byte, error) {
-	if len(word) != consts.ROUND_WORD_SIZE {
-		return [consts.ROUND_WORD_SIZE]byte{}, errors.New("invalid round key word size")
+func ScheduleCore(word [consts.WORD_SIZE]byte, idx byte) ([consts.WORD_SIZE]byte, error) {
+	if len(word) != consts.WORD_SIZE {
+		return [consts.WORD_SIZE]byte{}, errors.New("invalid round key word size")
 	}
 
 	word, err := RotWord(word)
 
 	if err != nil {
-		return [consts.ROUND_WORD_SIZE]byte{}, err
+		return [consts.WORD_SIZE]byte{}, err
 	}
 
 	sbox := sbox.InitSBOX()
 	word, err = SubWord(word, sbox)
 
 	if err != nil {
-		return [consts.ROUND_WORD_SIZE]byte{}, err
+		return [consts.WORD_SIZE]byte{}, err
 	}
 
 	word[0] ^= Rcon(idx)
@@ -86,15 +86,15 @@ func ExpandKey(k []byte) (*ExpandedKey, error) {
 	copy(xKey[:], k)
 
 	sbox := sbox.InitSBOX()
-	var tmpKey [consts.ROUND_WORD_SIZE]byte
+	var tmpKey [consts.WORD_SIZE]byte
 	var c byte = consts.KEY_SIZE
 	var idx byte = 1
 	var a byte
 	var err error
 
 	for c < consts.EXP_KEY_SIZE {
-		for a = 0; a < consts.ROUND_WORD_SIZE; a++ {
-			tmpKey[a] = xKey[a+c-consts.ROUND_WORD_SIZE]
+		for a = 0; a < consts.WORD_SIZE; a++ {
+			tmpKey[a] = xKey[a+c-consts.WORD_SIZE]
 		}
 
 		if c%consts.KEY_SIZE == 0 {
@@ -114,7 +114,7 @@ func ExpandKey(k []byte) (*ExpandedKey, error) {
 			}
 		}
 
-		for a = 0; a < consts.ROUND_WORD_SIZE; a++ {
+		for a = 0; a < consts.WORD_SIZE; a++ {
 			xKey[c] = xKey[c-consts.KEY_SIZE] ^ tmpKey[a]
 			c++
 		}

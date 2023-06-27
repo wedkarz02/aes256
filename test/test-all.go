@@ -42,13 +42,13 @@ func ReadTestFile(fileName string) ([][]byte, error) {
 }
 
 func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
-	xk, err := aes256.NewExpKey(k)
+	c, err := aes256.NewAES256(k)
 
 	if err != nil {
 		return false, "error", err
 	}
 
-	for i, b := range *xk {
+	for i, b := range c.ExpandedKey {
 		if b != expk[i] {
 			desc := fmt.Sprintf("Wrong byte found: %x instead of %x at index %v", b, expk[i], i)
 			return false, desc, nil
