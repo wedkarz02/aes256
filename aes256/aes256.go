@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/wedkarz02/aes256-go/aes256/consts"
-	"github.com/wedkarz02/aes256-go/aes256/galois"
+	g "github.com/wedkarz02/aes256-go/aes256/galois"
 	"github.com/wedkarz02/aes256-go/aes256/key"
 	"github.com/wedkarz02/aes256-go/aes256/sbox"
 )
@@ -166,10 +166,10 @@ func (a *AES256) MixColumns(state []byte) ([]byte, error) {
 	copy(mixed, state)
 
 	for i := 0; i < 4; i++ {
-		mixed[4*i+0] = galois.Gmul(0x02, state[4*i+0]) ^ galois.Gmul(0x03, state[4*i+1]) ^ state[4*i+2] ^ state[4*i+3]
-		mixed[4*i+1] = state[4*i+0] ^ galois.Gmul(0x02, state[4*i+1]) ^ galois.Gmul(0x03, state[4*i+2]) ^ state[4*i+3]
-		mixed[4*i+2] = state[4*i+0] ^ state[4*i+1] ^ galois.Gmul(0x02, state[4*i+2]) ^ galois.Gmul(0x03, state[4*i+3])
-		mixed[4*i+3] = galois.Gmul(0x03, state[4*i+0]) ^ state[4*i+1] ^ state[4*i+2] ^ galois.Gmul(0x02, state[4*i+3])
+		mixed[4*i+0] = g.Gmul(0x02, state[4*i+0]) ^ g.Gmul(0x03, state[4*i+1]) ^ state[4*i+2] ^ state[4*i+3]
+		mixed[4*i+1] = state[4*i+0] ^ g.Gmul(0x02, state[4*i+1]) ^ g.Gmul(0x03, state[4*i+2]) ^ state[4*i+3]
+		mixed[4*i+2] = state[4*i+0] ^ state[4*i+1] ^ g.Gmul(0x02, state[4*i+2]) ^ g.Gmul(0x03, state[4*i+3])
+		mixed[4*i+3] = g.Gmul(0x03, state[4*i+0]) ^ state[4*i+1] ^ state[4*i+2] ^ g.Gmul(0x02, state[4*i+3])
 	}
 
 	return mixed, nil
@@ -188,11 +188,37 @@ func (a *AES256) InvMixColumns(state []byte) ([]byte, error) {
 	copy(invMixed, state)
 
 	for i := 0; i < 4; i++ {
-		invMixed[4*i+0] = galois.Gmul(0x0e, state[4*i+0]) ^ galois.Gmul(0x0b, state[4*i+1]) ^ galois.Gmul(0x0d, state[4*i+2]) ^ galois.Gmul(0x09, state[4*i+3])
-		invMixed[4*i+1] = galois.Gmul(0x09, state[4*i+0]) ^ galois.Gmul(0x0e, state[4*i+1]) ^ galois.Gmul(0x0b, state[4*i+2]) ^ galois.Gmul(0x0d, state[4*i+3])
-		invMixed[4*i+2] = galois.Gmul(0x0d, state[4*i+0]) ^ galois.Gmul(0x09, state[4*i+1]) ^ galois.Gmul(0x0e, state[4*i+2]) ^ galois.Gmul(0x0b, state[4*i+3])
-		invMixed[4*i+3] = galois.Gmul(0x0b, state[4*i+0]) ^ galois.Gmul(0x0d, state[4*i+1]) ^ galois.Gmul(0x09, state[4*i+2]) ^ galois.Gmul(0x0e, state[4*i+3])
+		invMixed[4*i+0] = g.Gmul(0x0e, state[4*i+0]) ^ g.Gmul(0x0b, state[4*i+1]) ^ g.Gmul(0x0d, state[4*i+2]) ^ g.Gmul(0x09, state[4*i+3])
+		invMixed[4*i+1] = g.Gmul(0x09, state[4*i+0]) ^ g.Gmul(0x0e, state[4*i+1]) ^ g.Gmul(0x0b, state[4*i+2]) ^ g.Gmul(0x0d, state[4*i+3])
+		invMixed[4*i+2] = g.Gmul(0x0d, state[4*i+0]) ^ g.Gmul(0x09, state[4*i+1]) ^ g.Gmul(0x0e, state[4*i+2]) ^ g.Gmul(0x0b, state[4*i+3])
+		invMixed[4*i+3] = g.Gmul(0x0b, state[4*i+0]) ^ g.Gmul(0x0d, state[4*i+1]) ^ g.Gmul(0x09, state[4*i+2]) ^ g.Gmul(0x0e, state[4*i+3])
 	}
 
 	return invMixed, nil
+}
+
+// AddRoundKey performs a round key byte addition
+// inside Galois Finite Field (GF(2^8))
+// for each round of encryption/decryption.
+//
+// https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
+func (a *AES256) AddRoundKey(state []byte, roundIdx int) ([]byte, error) {
+	if len(state) != consts.BLOCK_SIZE {
+		return nil, errors.New("state size not matching the block size")
+	}
+
+	if roundIdx >= consts.NR {
+		return nil, errors.New("round index out of range")
+	}
+
+	roundKey := a.ExpandedKey[roundIdx*consts.BLOCK_SIZE : (roundIdx+1)*consts.BLOCK_SIZE]
+
+	newState := make([]byte, len(state))
+	copy(newState, state)
+
+	for i, b := range state {
+		newState[i] = g.Gadd(b, roundKey[i])
+	}
+
+	return newState, nil
 }
