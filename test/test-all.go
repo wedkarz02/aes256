@@ -96,14 +96,20 @@ func RunKeyTest() {
 	}
 }
 
-func TestMixCol(state []byte, mixedState []byte) (bool, string, error) {
+func TestMixCol(state []byte, mixedState []byte, inv bool) (bool, string, error) {
 	c, err := aes256.NewAES256(genericKey)
 
 	if err != nil {
 		return false, "error", err
 	}
 
-	mixedWord, err := c.MixColumns(state)
+	var mixedWord []byte
+
+	if !inv {
+		mixedWord, err = c.MixColumns(state)
+	} else {
+		mixedWord, err = c.InvMixColumns(state)
+	}
 
 	if err != nil {
 		return false, "error", err
@@ -113,7 +119,7 @@ func TestMixCol(state []byte, mixedState []byte) (bool, string, error) {
 	return result, desc, nil
 }
 
-func RunMixColTest() {
+func RunMixColTest(inv bool) {
 	testStates, err := ReadTestFile("states-test.txt")
 	if err != nil {
 		panic(err)
@@ -124,10 +130,14 @@ func RunMixColTest() {
 		panic(err)
 	}
 
+	if inv {
+		testStates, mixedStates = mixedStates, testStates
+	}
+
 	fmt.Printf("Status\tCol_num\tDescription\n")
 
 	for i, word := range testStates {
-		ok, desc, err := TestMixCol(word, mixedStates[i])
+		ok, desc, err := TestMixCol(word, mixedStates[i], inv)
 
 		if err != nil {
 			panic(err)
@@ -140,5 +150,5 @@ func RunMixColTest() {
 func main() {
 	RunKeyTest()
 	fmt.Println()
-	RunMixColTest()
+	RunMixColTest(false)
 }
