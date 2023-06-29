@@ -113,7 +113,7 @@ func (a *AES256) ShiftRows(state []byte) ([]byte, error) {
 		return nil, errors.New("state size not matching the block size")
 	}
 
-	var shiftedState []byte
+	shiftedState := make([]byte, len(state))
 	copy(shiftedState, state)
 
 	for i := 1; i < 4; i++ {
@@ -137,7 +137,7 @@ func (a *AES256) InvShiftRows(state []byte) ([]byte, error) {
 		return nil, errors.New("state size not matching the block size")
 	}
 
-	var invShiftedState []byte
+	invShiftedState := make([]byte, len(state))
 	copy(invShiftedState, state)
 
 	for i := 1; i < 4; i++ {
@@ -207,7 +207,7 @@ func (a *AES256) AddRoundKey(state []byte, roundIdx int) ([]byte, error) {
 		return nil, errors.New("state size not matching the block size")
 	}
 
-	if roundIdx >= consts.NR {
+	if roundIdx > consts.NR {
 		return nil, errors.New("round index out of range")
 	}
 
@@ -221,4 +221,62 @@ func (a *AES256) AddRoundKey(state []byte, roundIdx int) ([]byte, error) {
 	}
 
 	return newState, nil
+}
+
+// EncryptBlock performs 256 bit AES encryption
+// of one 16 byte block.
+//
+// https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
+func (a *AES256) EncryptBlock(state []byte) ([]byte, error) {
+	if len(state) != consts.BLOCK_SIZE {
+		return nil, errors.New("state size not matching the block size")
+	}
+
+	var err error
+	cipherText := make([]byte, len(state))
+	copy(cipherText, state)
+
+	cipherText, err = a.AddRoundKey(cipherText, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	for roundIdx := 1; roundIdx < consts.NR; roundIdx++ {
+		cipherText, err = a.SubBytes(cipherText)
+		if err != nil {
+			return nil, err
+		}
+
+		cipherText, err = a.ShiftRows(cipherText)
+		if err != nil {
+			return nil, err
+		}
+
+		cipherText, err = a.MixColumns(cipherText)
+		if err != nil {
+			return nil, err
+		}
+
+		cipherText, err = a.AddRoundKey(cipherText, roundIdx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	cipherText, err = a.SubBytes(cipherText)
+	if err != nil {
+		return nil, err
+	}
+
+	cipherText, err = a.ShiftRows(cipherText)
+	if err != nil {
+		return nil, err
+	}
+
+	cipherText, err = a.AddRoundKey(cipherText, consts.NR)
+	if err != nil {
+		return nil, err
+	}
+
+	return cipherText, nil
 }

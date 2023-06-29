@@ -148,9 +148,26 @@ func RunMixColTest(inv bool) {
 }
 
 func main() {
-	RunKeyTest()
+	// RunKeyTest()
+	// fmt.Println()
+	// RunMixColTest(false)
+	// fmt.Println()
+	// RunMixColTest(true)
+
+	c, _ := aes256.NewAES256(genericKey)
+	plain := []byte("0000000000000000")
+	cipher, err := c.EncryptBlock(plain)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, b := range plain {
+		fmt.Printf("0x%02x ", b)
+	}
 	fmt.Println()
-	RunMixColTest(false)
+
+	for _, b := range cipher {
+		fmt.Printf("0x%02x ", b)
+	}
 	fmt.Println()
-	RunMixColTest(true)
 }
