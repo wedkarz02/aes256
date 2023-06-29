@@ -41,6 +41,22 @@ func ReadTestFile(fileName string) ([][]byte, error) {
 	return keys, nil
 }
 
+func CompareBytes(in []byte, pattern []byte) (bool, string) {
+	if len(in) != len(pattern) {
+		desc := fmt.Sprintf("len(in) does not match len(pattern): %v != %v", len(in), len(pattern))
+		return false, desc
+	}
+
+	for i := range in {
+		if in[i] != pattern[i] {
+			desc := fmt.Sprintf("Wrong byte found: %x instead of %x at index %v", in[i], pattern[i], i)
+			return false, desc
+		}
+	}
+
+	return true, "Correct output"
+}
+
 func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
 	c, err := aes256.NewAES256(k)
 
@@ -48,14 +64,8 @@ func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
 		return false, "error", err
 	}
 
-	for i, b := range c.ExpandedKey {
-		if b != expk[i] {
-			desc := fmt.Sprintf("Wrong byte found: %x instead of %x at index %v", b, expk[i], i)
-			return false, desc, nil
-		}
-	}
-
-	return true, "Correct output", nil
+	result, desc := CompareBytes(c.ExpandedKey[:], expk)
+	return result, desc, nil
 }
 
 func RunKeyTest() {
