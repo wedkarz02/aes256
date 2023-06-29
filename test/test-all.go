@@ -73,12 +73,12 @@ func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
 }
 
 func RunKeyTest() {
-	testKeys, err := ReadTestFile("keyvec-test.txt")
+	testKeys, err := ReadTestFile("testvec/keyvec-test.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	xTestKeys, err := ReadTestFile("xkeyvec-test.txt")
+	xTestKeys, err := ReadTestFile("testvec/xkeyvec-test.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -120,12 +120,12 @@ func TestMixCol(state []byte, mixedState []byte, inv bool) (bool, string, error)
 }
 
 func RunMixColTest(inv bool) {
-	testStates, err := ReadTestFile("states-test.txt")
+	testStates, err := ReadTestFile("testvec/states-test.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	mixedStates, err := ReadTestFile("mixedcolstates-test.txt")
+	mixedStates, err := ReadTestFile("testvec/mixedcolstates-test.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -151,4 +151,6 @@ func main() {
 	RunKeyTest()
 	fmt.Println()
 	RunMixColTest(false)
+	fmt.Println()
+	RunMixColTest(true)
 }
