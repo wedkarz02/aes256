@@ -10,6 +10,9 @@ import (
 	"github.com/wedkarz02/aes256-go/aes256"
 )
 
+// This key is for testing purposes only.
+var genericKey = []byte("supersecretkeythathastobe32bytes")
+
 func ReadTestFile(fileName string) ([][]byte, error) {
 	file, err := os.Open(fileName)
 
@@ -28,6 +31,7 @@ func ReadTestFile(fileName string) ([][]byte, error) {
 
 		bytes, err := hex.DecodeString(keyStr)
 		if err != nil {
+			fmt.Println(hex.EncodeToString(bytes))
 			return nil, err
 		}
 
@@ -92,6 +96,49 @@ func RunKeyTest() {
 	}
 }
 
+func TestMixCol(state []byte, mixedState []byte) (bool, string, error) {
+	c, err := aes256.NewAES256(genericKey)
+
+	if err != nil {
+		return false, "error", err
+	}
+
+	mixedWord, err := c.MixColumns(state)
+
+	if err != nil {
+		return false, "error", err
+	}
+
+	result, desc := CompareBytes(mixedWord, mixedState)
+	return result, desc, nil
+}
+
+func RunMixColTest() {
+	testStates, err := ReadTestFile("states-test.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	mixedStates, err := ReadTestFile("mixedcolstates-test.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Status\tCol_num\tDescription\n")
+
+	for i, word := range testStates {
+		ok, desc, err := TestMixCol(word, mixedStates[i])
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("%v\t%v\t%v\n", map[bool]string{true: "Passed", false: "Failed"}[ok], i, desc)
+	}
+}
+
 func main() {
 	RunKeyTest()
+	fmt.Println()
+	RunMixColTest()
 }

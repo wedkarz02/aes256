@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/wedkarz02/aes256-go/aes256/consts"
+	"github.com/wedkarz02/aes256-go/aes256/galois"
 	"github.com/wedkarz02/aes256-go/aes256/key"
 	"github.com/wedkarz02/aes256-go/aes256/sbox"
 )
@@ -149,4 +150,23 @@ func (a *AES256) InvShiftRows(state []byte) ([]byte, error) {
 	}
 
 	return invShiftedState, nil
+}
+
+// https://en.wikipedia.org/wiki/Rijndael_MixColumns
+func (a *AES256) MixColumns(state []byte) ([]byte, error) {
+	if len(state) != consts.BLOCK_SIZE {
+		return nil, errors.New("state size not matching the block size")
+	}
+
+	mixed := make([]byte, len(state))
+	copy(mixed, state)
+
+	for i := 0; i < 4; i++ {
+		mixed[4*i+0] = galois.Gmul(0x02, state[4*i+0]) ^ galois.Gmul(0x03, state[4*i+1]) ^ state[4*i+2] ^ state[4*i+3]
+		mixed[4*i+1] = state[4*i+0] ^ galois.Gmul(0x02, state[4*i+1]) ^ galois.Gmul(0x03, state[4*i+2]) ^ state[4*i+3]
+		mixed[4*i+2] = state[4*i+0] ^ state[4*i+1] ^ galois.Gmul(0x02, state[4*i+2]) ^ galois.Gmul(0x03, state[4*i+3])
+		mixed[4*i+3] = galois.Gmul(0x03, state[4*i+0]) ^ state[4*i+1] ^ state[4*i+2] ^ galois.Gmul(0x02, state[4*i+3])
+	}
+
+	return mixed, nil
 }
