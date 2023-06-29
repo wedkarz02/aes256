@@ -152,6 +152,10 @@ func (a *AES256) InvShiftRows(state []byte) ([]byte, error) {
 	return invShiftedState, nil
 }
 
+// MixColumns performs a matrix multiplication
+// inside Galois Finite Field (GF(2^8)).
+// Used with ShiftRows in order to create diffusion.
+//
 // https://en.wikipedia.org/wiki/Rijndael_MixColumns
 func (a *AES256) MixColumns(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
