@@ -174,3 +174,25 @@ func (a *AES256) MixColumns(state []byte) ([]byte, error) {
 
 	return mixed, nil
 }
+
+// InvMixColumns undoes the MixColumns operation
+// allowing decryption.
+//
+// https://en.wikipedia.org/wiki/Rijndael_MixColumns
+func (a *AES256) InvMixColumns(state []byte) ([]byte, error) {
+	if len(state) != consts.BLOCK_SIZE {
+		return nil, errors.New("state size not matching the block size")
+	}
+
+	invMixed := make([]byte, len(state))
+	copy(invMixed, state)
+
+	for i := 0; i < 4; i++ {
+		invMixed[4*i+0] = galois.Gmul(0x0e, state[4*i+0]) ^ galois.Gmul(0x0b, state[4*i+1]) ^ galois.Gmul(0x0d, state[4*i+2]) ^ galois.Gmul(0x09, state[4*i+3])
+		invMixed[4*i+1] = galois.Gmul(0x09, state[4*i+0]) ^ galois.Gmul(0x0e, state[4*i+1]) ^ galois.Gmul(0x0b, state[4*i+2]) ^ galois.Gmul(0x0d, state[4*i+3])
+		invMixed[4*i+2] = galois.Gmul(0x0d, state[4*i+0]) ^ galois.Gmul(0x09, state[4*i+1]) ^ galois.Gmul(0x0e, state[4*i+2]) ^ galois.Gmul(0x0b, state[4*i+3])
+		invMixed[4*i+3] = galois.Gmul(0x0b, state[4*i+0]) ^ galois.Gmul(0x0d, state[4*i+1]) ^ galois.Gmul(0x09, state[4*i+2]) ^ galois.Gmul(0x0e, state[4*i+3])
+	}
+
+	return invMixed, nil
+}
