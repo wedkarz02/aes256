@@ -3,9 +3,9 @@ package key
 import (
 	"errors"
 
-	"github.com/wedkarz02/aes256go/aes256/consts"
-	"github.com/wedkarz02/aes256go/aes256/galois"
-	"github.com/wedkarz02/aes256go/aes256/sbox"
+	"github.com/wedkarz02/aes256go/src/consts"
+	"github.com/wedkarz02/aes256go/src/galois"
+	"github.com/wedkarz02/aes256go/src/sbox"
 )
 
 type ExpandedKey [consts.EXP_KEY_SIZE]byte

@@ -3,10 +3,10 @@ package aes256go
 import (
 	"errors"
 
-	"github.com/wedkarz02/aes256go/aes256/consts"
-	g "github.com/wedkarz02/aes256go/aes256/galois"
-	"github.com/wedkarz02/aes256go/aes256/key"
-	"github.com/wedkarz02/aes256go/aes256/sbox"
+	"github.com/wedkarz02/aes256go/src/consts"
+	g "github.com/wedkarz02/aes256go/src/galois"
+	"github.com/wedkarz02/aes256go/src/key"
+	"github.com/wedkarz02/aes256go/src/sbox"
 )
 
 type AES256 struct {
