@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/wedkarz02/aes256-go/aes256"
-	"github.com/wedkarz02/aes256-go/aes256/consts"
+	"github.com/wedkarz02/aes256go"
+	"github.com/wedkarz02/aes256go/src/consts"
 )
 
 var genericKey = []byte("supersecretkeythathastobe32bytes")
@@ -66,7 +66,7 @@ func CompareBytes(in []byte, pattern []byte) (bool, string) {
 }
 
 func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
-	c, err := aes256.NewAES256(k)
+	c, err := aes256go.NewAES256(k)
 
 	if err != nil {
 		return false, "error", err
@@ -101,7 +101,7 @@ func RunKeyTest() {
 }
 
 func TestMixCol(state []byte, mixedState []byte, inv bool) (bool, string, error) {
-	c, err := aes256.NewAES256(genericKey)
+	c, err := aes256go.NewAES256(genericKey)
 
 	if err != nil {
 		return false, "error", err
@@ -156,7 +156,7 @@ func TestBlockEncryption(testKey []byte, encVec []byte) (bool, string, error) {
 		return false, "test only for one state: len(genericPlain) != BLOCK_SIZE", nil
 	}
 
-	c, err := aes256.NewAES256(testKey)
+	c, err := aes256go.NewAES256(testKey)
 
 	if err != nil {
 		return false, "error", err
@@ -204,7 +204,7 @@ func TestBlockDecryption(testKey []byte, cipher []byte) (bool, string, error) {
 		return false, "test only for one state: len(genericPlain) != BLOCK_SIZE", nil
 	}
 
-	c, err := aes256.NewAES256(testKey)
+	c, err := aes256go.NewAES256(testKey)
 
 	if err != nil {
 		return false, "error", err

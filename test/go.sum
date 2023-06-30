@@ -1,2 +1,2 @@
-github.com/wedkarz02/aes256-go/aes256 v0.0.0-20230625114302-ae5a633f56d2 h1:jrUHkyOw0/pvwjDd12llWG0JPdczmyDpoIAXAw3NoXE=
-github.com/wedkarz02/aes256-go/aes256 v0.0.0-20230625114302-ae5a633f56d2/go.mod h1:nTPPbshMlCl0HxfImTjFvmLIDxy21Yq9Jx5BiL/HblY=
+github.com/wedkarz02/aes256go v1.1.0 h1:U0TRcv893y1U9V2lqtDUQMufTj044trfb3F46G7wECg=
+github.com/wedkarz02/aes256go v1.1.0/go.mod h1:K4sfTGY7WAy24QABrCl0y+8xqTQD0TAs0coM3Zhp7k0=
