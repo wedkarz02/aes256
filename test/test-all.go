@@ -8,10 +8,14 @@ import (
 	"strings"
 
 	"github.com/wedkarz02/aes256-go/aes256"
+	"github.com/wedkarz02/aes256-go/aes256/consts"
 )
 
-// This key is for testing purposes only.
 var genericKey = []byte("supersecretkeythathastobe32bytes")
+var genericPlain = []byte{
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+}
 
 func ReadTestFile(fileName string) ([][]byte, error) {
 	file, err := os.Open(fileName)
@@ -53,7 +57,7 @@ func CompareBytes(in []byte, pattern []byte) (bool, string) {
 
 	for i := range in {
 		if in[i] != pattern[i] {
-			desc := fmt.Sprintf("Wrong byte found: %x instead of %x at index %v", in[i], pattern[i], i)
+			desc := fmt.Sprintf("Wrong byte found: 0x%02x instead of 0x%02x at index %v", in[i], pattern[i], i)
 			return false, desc
 		}
 	}
@@ -147,27 +151,118 @@ func RunMixColTest(inv bool) {
 	}
 }
 
-func main() {
-	// RunKeyTest()
-	// fmt.Println()
-	// RunMixColTest(false)
-	// fmt.Println()
-	// RunMixColTest(true)
+func TestBlockEncryption(testKey []byte, encVec []byte) (bool, string, error) {
+	if len(genericPlain) != consts.BLOCK_SIZE {
+		return false, "test only for one state: len(genericPlain) != BLOCK_SIZE", nil
+	}
 
-	c, _ := aes256.NewAES256(genericKey)
-	plain := []byte("0000000000000000")
-	cipher, err := c.EncryptBlock(plain)
+	c, err := aes256.NewAES256(testKey)
+
+	if err != nil {
+		return false, "error", err
+	}
+
+	state := make([]byte, len(genericPlain))
+	copy(state, genericPlain)
+
+	encryptedBlock, err := c.EncryptBlock(state)
+
+	if err != nil {
+		return false, "error", err
+	}
+
+	result, desc := CompareBytes(encryptedBlock, encVec)
+	return result, desc, nil
+}
+
+func RunBlockEncryptionTest() {
+	keys, err := ReadTestFile("testvec/blockkey-test.txt")
 	if err != nil {
 		panic(err)
 	}
 
-	for _, b := range plain {
-		fmt.Printf("0x%02x ", b)
+	ciphers, err := ReadTestFile("testvec/blockenc-test.txt")
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println()
 
-	for _, b := range cipher {
-		fmt.Printf("0x%02x ", b)
+	fmt.Printf("Status\tState_num\tDescription\n")
+
+	for i, k := range keys {
+		ok, desc, err := TestBlockEncryption(k, ciphers[i])
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("%v\t%v\t%v\n", map[bool]string{true: "Passed", false: "Failed"}[ok], i, desc)
 	}
+}
+
+func TestBlockDecryption(testKey []byte, cipher []byte) (bool, string, error) {
+	if len(genericPlain) != consts.BLOCK_SIZE {
+		return false, "test only for one state: len(genericPlain) != BLOCK_SIZE", nil
+	}
+
+	c, err := aes256.NewAES256(testKey)
+
+	if err != nil {
+		return false, "error", err
+	}
+
+	state := make([]byte, len(cipher))
+	copy(state, cipher)
+
+	decryptedBlock, err := c.DecryptBlock(state)
+
+	if err != nil {
+		return false, "error", err
+	}
+
+	result, desc := CompareBytes(decryptedBlock, genericPlain)
+	return result, desc, nil
+}
+
+func RunBlockDecryptionTest() {
+	keys, err := ReadTestFile("testvec/blockkey-test.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	ciphers, err := ReadTestFile("testvec/blockenc-test.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Status\tState_num\tDescription\n")
+
+	for i, k := range keys {
+		ok, desc, err := TestBlockDecryption(k, ciphers[i])
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("%v\t%v\t%v\n", map[bool]string{true: "Passed", false: "Failed"}[ok], i, desc)
+	}
+}
+
+func main() {
+	// Watch out for large output.
+	// Highly recommend running one
+	// test at a time and directing
+	// it to a file.
+	//
+	// $ go run test-all.go > tests.txt
+
+	RunKeyTest()
+	fmt.Println()
+	RunMixColTest(false)
+	fmt.Println()
+	RunMixColTest(true)
+	fmt.Println()
+	RunBlockEncryptionTest()
+	fmt.Println()
+	RunBlockDecryptionTest()
 	fmt.Println()
 }
