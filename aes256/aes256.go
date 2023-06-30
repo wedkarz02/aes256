@@ -122,7 +122,7 @@ func (a *AES256) ShiftRows(state []byte) ([]byte, error) {
 		shiftedState[i+(4*0)] = state[i+4*((j+0)%4)]
 		shiftedState[i+(4*1)] = state[i+4*((j+1)%4)]
 		shiftedState[i+(4*2)] = state[i+4*((j+2)%4)]
-		shiftedState[i+(4*3)] = state[i+4*((j+4)%4)]
+		shiftedState[i+(4*3)] = state[i+4*((j+3)%4)]
 	}
 
 	return shiftedState, nil
@@ -142,11 +142,10 @@ func (a *AES256) InvShiftRows(state []byte) ([]byte, error) {
 
 	for i := 1; i < 4; i++ {
 		j := 4 - i
-
 		invShiftedState[i+(4*0)] = state[i+4*((j+0)%4)]
 		invShiftedState[i+(4*1)] = state[i+4*((j+1)%4)]
 		invShiftedState[i+(4*2)] = state[i+4*((j+2)%4)]
-		invShiftedState[i+(4*3)] = state[i+4*((j+4)%4)]
+		invShiftedState[i+(4*3)] = state[i+4*((j+3)%4)]
 	}
 
 	return invShiftedState, nil
@@ -279,4 +278,62 @@ func (a *AES256) EncryptBlock(state []byte) ([]byte, error) {
 	}
 
 	return cipherText, nil
+}
+
+// DecryptBlock performs 256 bit AES decryption
+// of one 16 byte block.
+//
+// https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
+func (a *AES256) DecryptBlock(state []byte) ([]byte, error) {
+	if len(state) != consts.BLOCK_SIZE {
+		return nil, errors.New("state size not matching the block size")
+	}
+
+	var err error
+	plainText := make([]byte, len(state))
+	copy(plainText, state)
+
+	plainText, err = a.AddRoundKey(plainText, consts.NR)
+	if err != nil {
+		return nil, err
+	}
+
+	for roundIdx := consts.NR - 1; roundIdx > 0; roundIdx-- {
+		plainText, err = a.InvShiftRows(plainText)
+		if err != nil {
+			return nil, err
+		}
+
+		plainText, err = a.InvSubBytes(plainText)
+		if err != nil {
+			return nil, err
+		}
+
+		plainText, err = a.AddRoundKey(plainText, roundIdx)
+		if err != nil {
+			return nil, err
+		}
+
+		plainText, err = a.InvMixColumns(plainText)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	plainText, err = a.InvShiftRows(plainText)
+	if err != nil {
+		return nil, err
+	}
+
+	plainText, err = a.InvSubBytes(plainText)
+	if err != nil {
+		return nil, err
+	}
+
+	plainText, err = a.AddRoundKey(plainText, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return plainText, nil
 }
