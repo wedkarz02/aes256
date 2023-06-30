@@ -1,8 +1,10 @@
 # AES256
 
 Implementation of 256 bit version of AES algorithm.
+Detailed description not avaliable yet.
 
 # Quick Setup
-To install this package 
+Not available yet.
 
 # Requirements
+Not available yet.
