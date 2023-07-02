@@ -29,3 +29,26 @@ func ZeroUnpadding(paddedData []byte) []byte {
 
 	return data
 }
+
+func PKCS7Padding(data []byte) []byte {
+	paddedData := make([]byte, len(data))
+	copy(paddedData, data)
+
+	remainder := len(paddedData) % consts.BLOCK_SIZE
+	padLength := consts.BLOCK_SIZE - remainder
+
+	for i := 0; i < padLength; i++ {
+		paddedData = append(paddedData, byte(padLength))
+	}
+
+	return paddedData
+}
+
+func PKCS7UnPadding(paddedData []byte) []byte {
+	padLength := paddedData[len(paddedData)-1]
+
+	data := make([]byte, len(paddedData)-int(padLength))
+	copy(data, paddedData[:len(paddedData)-int(padLength)])
+
+	return data
+}

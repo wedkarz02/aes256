@@ -267,21 +267,17 @@ func main() {
 	// RunBlockDecryptionTest()
 	// fmt.Println()
 
-	message := []byte("Hello world, this is a super secret message. It will be encrypted with ECB mode and ZeroPadding function!")
+	message := []byte("Hello world, this is a super secret message. It will be encrypted with ECB mode and PKCS7 padding function!")
 	c, err := aes256go.NewAES256(genericKey)
 	if err != nil {
 		panic(err)
 	}
 
-	cipher, err := c.EncryptECB(message, padding.ZeroPadding)
+	cipher, err := c.EncryptECB(message, padding.PKCS7Padding)
 	if err != nil {
 		panic(err)
 	}
 
-	for _, b := range cipher {
-		fmt.Printf("0x%02x ", b)
-	}
-	fmt.Println()
 	fmt.Println(string(cipher))
 
 	newC, err := aes256go.NewAES256(genericKey)
@@ -289,14 +285,10 @@ func main() {
 		panic(err)
 	}
 
-	plain, err := newC.DecryptECB(cipher, padding.ZeroUnpadding)
+	plain, err := newC.DecryptECB(cipher, padding.PKCS7UnPadding)
 	if err != nil {
 		panic(err)
 	}
-	for _, b := range plain {
-		fmt.Printf("0x%02x ", b)
-	}
-	fmt.Println()
 
 	fmt.Println(string(plain))
 }
