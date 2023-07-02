@@ -6,6 +6,7 @@ import (
 	"github.com/wedkarz02/aes256go/src/consts"
 	g "github.com/wedkarz02/aes256go/src/galois"
 	"github.com/wedkarz02/aes256go/src/key"
+	"github.com/wedkarz02/aes256go/src/padding"
 	"github.com/wedkarz02/aes256go/src/sbox"
 )
 
@@ -335,5 +336,39 @@ func (a *AES256) DecryptBlock(state []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	return plainText, nil
+}
+
+func (a *AES256) EncryptECB(plainText []byte, pad padding.Pad) ([]byte, error) {
+	paddedPlain := pad(plainText)
+	var cipherText []byte
+
+	for i := 0; i < len(paddedPlain); i += consts.BLOCK_SIZE {
+		encBlock, err := a.EncryptBlock(paddedPlain[i : i+consts.BLOCK_SIZE])
+
+		if err != nil {
+			return nil, err
+		}
+
+		cipherText = append(cipherText, encBlock...)
+	}
+
+	return cipherText, nil
+}
+
+func (a *AES256) DecryptECB(cipherText []byte, unpad padding.UnPad) ([]byte, error) {
+	var paddedPlain []byte
+
+	for i := 0; i < len(cipherText); i += consts.BLOCK_SIZE {
+		decBlock, err := a.DecryptBlock(cipherText[i : i+consts.BLOCK_SIZE])
+
+		if err != nil {
+			return nil, err
+		}
+
+		paddedPlain = append(paddedPlain, decBlock...)
+	}
+
+	plainText := unpad(paddedPlain)
 	return plainText, nil
 }
