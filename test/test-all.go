@@ -9,7 +9,6 @@ import (
 
 	"github.com/wedkarz02/aes256go"
 	"github.com/wedkarz02/aes256go/src/consts"
-	"github.com/wedkarz02/aes256go/src/padding"
 )
 
 var genericKey = []byte("supersecretkeythathastobe32bytes")
@@ -256,39 +255,14 @@ func main() {
 	//
 	// $ go run test-all.go > tests.txt
 
-	// RunKeyTest()
-	// fmt.Println()
-	// RunMixColTest(false)
-	// fmt.Println()
-	// RunMixColTest(true)
-	// fmt.Println()
-	// RunBlockEncryptionTest()
-	// fmt.Println()
-	// RunBlockDecryptionTest()
-	// fmt.Println()
-
-	message := []byte("Hello world, this is a super secret message. It will be encrypted with ECB mode and PKCS7 padding function!")
-	c, err := aes256go.NewAES256(genericKey)
-	if err != nil {
-		panic(err)
-	}
-
-	cipher, err := c.EncryptECB(message, padding.PKCS7Padding)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(cipher))
-
-	newC, err := aes256go.NewAES256(genericKey)
-	if err != nil {
-		panic(err)
-	}
-
-	plain, err := newC.DecryptECB(cipher, padding.PKCS7UnPadding)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(plain))
+	RunKeyTest()
+	fmt.Println()
+	RunMixColTest(false)
+	fmt.Println()
+	RunMixColTest(true)
+	fmt.Println()
+	RunBlockEncryptionTest()
+	fmt.Println()
+	RunBlockDecryptionTest()
+	fmt.Println()
 }
