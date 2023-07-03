@@ -1,7 +1,9 @@
 package aes256go
 
 import (
+	"crypto/rand"
 	"errors"
+	"io"
 
 	"github.com/wedkarz02/aes256go/src/consts"
 	g "github.com/wedkarz02/aes256go/src/galois"
@@ -371,6 +373,62 @@ func (a *AES256) DecryptECB(cipherText []byte, unpad padding.UnPad) ([]byte, err
 		if err != nil {
 			return nil, err
 		}
+
+		paddedPlain = append(paddedPlain, decBlock...)
+	}
+
+	plainText := unpad(paddedPlain)
+	return plainText, nil
+}
+
+// Data encryption using CBC mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
+func (a *AES256) EncryptCBC(plainText []byte, pad padding.Pad) ([]byte, error) {
+	paddedPlain := pad(plainText)
+	var cipherText []byte
+
+	iv := make([]byte, consts.IV_SIZE)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, errors.New("iv initialization failed")
+	}
+
+	cipherText = append(cipherText, iv...)
+
+	for i := 0; i < len(paddedPlain)+consts.IV_SIZE; i += consts.BLOCK_SIZE {
+		maskedBlock := g.GXorBlock(paddedPlain[i:i+consts.BLOCK_SIZE], iv)
+		encBlock, err := a.EncryptBlock(maskedBlock)
+
+		if err != nil {
+			return nil, err
+		}
+
+		cipherText = append(cipherText, encBlock...)
+		copy(iv, encBlock)
+	}
+
+	return cipherText, nil
+}
+
+// Data decryption using CBC mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)
+func (a *AES256) DecryptCBC(cipherText []byte, unpad padding.UnPad) ([]byte, error) {
+	iv := cipherText[:consts.IV_SIZE]
+	var strippedCipher []byte
+	var paddedPlain []byte
+
+	strippedCipher = append(strippedCipher, cipherText[consts.IV_SIZE:]...)
+
+	for i := 0; i < len(strippedCipher); i += consts.BLOCK_SIZE {
+		decBlock, err := a.DecryptBlock(strippedCipher[i : i+consts.BLOCK_SIZE])
+
+		if err != nil {
+			return nil, err
+		}
+
+		decBlock = g.GXorBlock(decBlock, iv)
+		copy(iv, strippedCipher[i:i+consts.BLOCK_SIZE])
 
 		paddedPlain = append(paddedPlain, decBlock...)
 	}

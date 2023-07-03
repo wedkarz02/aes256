@@ -28,3 +28,13 @@ func Gmul(a byte, b byte) byte {
 
 	return p
 }
+
+func GXorBlock(a []byte, b []byte) []byte {
+	var result []byte
+
+	for i, val := range a {
+		result = append(result, Gadd(val, b[i]))
+	}
+
+	return result
+}
