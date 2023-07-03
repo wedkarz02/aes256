@@ -339,6 +339,9 @@ func (a *AES256) DecryptBlock(state []byte) ([]byte, error) {
 	return plainText, nil
 }
 
+// Data encryption using ECB mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
 func (a *AES256) EncryptECB(plainText []byte, pad padding.Pad) ([]byte, error) {
 	paddedPlain := pad(plainText)
 	var cipherText []byte
@@ -356,6 +359,9 @@ func (a *AES256) EncryptECB(plainText []byte, pad padding.Pad) ([]byte, error) {
 	return cipherText, nil
 }
 
+// Data decryption using ECB mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
 func (a *AES256) DecryptECB(cipherText []byte, unpad padding.UnPad) ([]byte, error) {
 	var paddedPlain []byte
 
