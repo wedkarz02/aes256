@@ -395,7 +395,7 @@ func (a *AES256) EncryptCBC(plainText []byte, pad padding.Pad) ([]byte, error) {
 
 	cipherText = append(cipherText, iv...)
 
-	for i := 0; i < len(paddedPlain)+consts.IV_SIZE; i += consts.BLOCK_SIZE {
+	for i := 0; i < len(paddedPlain); i += consts.BLOCK_SIZE {
 		maskedBlock := g.GXorBlock(paddedPlain[i:i+consts.BLOCK_SIZE], iv)
 		encBlock, err := a.EncryptBlock(maskedBlock)
 

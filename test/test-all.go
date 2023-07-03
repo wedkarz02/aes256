@@ -267,7 +267,7 @@ func main() {
 	// RunBlockDecryptionTest()
 	// fmt.Println()
 
-	msg := []byte("Hello world, this message will be encrypted with the AES algorithm and CBC mode of operation! Yay!")
+	msg := []byte("Fixed the bug")
 	c, _ := aes256go.NewAES256(genericKey)
 
 	cipherText, err := c.EncryptCBC(msg, padding.PKCS7Padding)
