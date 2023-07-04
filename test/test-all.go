@@ -9,10 +9,10 @@ import (
 
 	"github.com/wedkarz02/aes256go"
 	"github.com/wedkarz02/aes256go/src/consts"
-	"github.com/wedkarz02/aes256go/src/padding"
+	"github.com/wedkarz02/aes256go/src/key"
 )
 
-var genericKey = []byte("supersecretkeythathastobe32bytes")
+var genericKey = []byte("supersecretkeytobe32bytes")
 var genericPlain = []byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -67,13 +67,13 @@ func CompareBytes(in []byte, pattern []byte) (bool, string) {
 }
 
 func TestKeyExp(k []byte, expk []byte) (bool, string, error) {
-	c, err := aes256go.NewAES256(k)
+	expandedKey, err := key.ExpandKey(k)
 
 	if err != nil {
 		return false, "error", err
 	}
 
-	result, desc := CompareBytes(c.ExpandedKey[:], expk)
+	result, desc := CompareBytes(expandedKey[:], expk)
 	return result, desc, nil
 }
 
@@ -163,6 +163,17 @@ func TestBlockEncryption(testKey []byte, encVec []byte) (bool, string, error) {
 		return false, "error", err
 	}
 
+	// The keys have to be reassigned here due to
+	// key hashing inside NewAES256().
+	// Otherwise the keys won't match the ones
+	// saved in test vector files -> test will fail.
+	// Please don't do this in the actual encryption.
+	c.Key = testKey
+	c.ExpandedKey, err = key.ExpandKey(c.Key)
+	if err != nil {
+		return false, "error", err
+	}
+
 	state := make([]byte, len(genericPlain))
 	copy(state, genericPlain)
 
@@ -207,6 +218,17 @@ func TestBlockDecryption(testKey []byte, cipher []byte) (bool, string, error) {
 
 	c, err := aes256go.NewAES256(testKey)
 
+	if err != nil {
+		return false, "error", err
+	}
+
+	// The keys have to be reassigned here due to
+	// key hashing inside NewAES256().
+	// Otherwise the keys won't match the ones
+	// saved in test vector files -> test will fail.
+	// Please don't do this in the actual encryption.
+	c.Key = testKey
+	c.ExpandedKey, err = key.ExpandKey(c.Key)
 	if err != nil {
 		return false, "error", err
 	}
@@ -256,31 +278,14 @@ func main() {
 	//
 	// $ go run test-all.go > tests.txt
 
-	// RunKeyTest()
-	// fmt.Println()
-	// RunMixColTest(false)
-	// fmt.Println()
-	// RunMixColTest(true)
-	// fmt.Println()
-	// RunBlockEncryptionTest()
-	// fmt.Println()
-	// RunBlockDecryptionTest()
-	// fmt.Println()
-
-	msg := []byte("Fixed the bug")
-	c, _ := aes256go.NewAES256(genericKey)
-
-	cipherText, err := c.EncryptCBC(msg, padding.PKCS7Padding)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(cipherText))
-
-	plain, err := c.DecryptCBC(cipherText, padding.PKCS7UnPadding)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(plain))
+	RunKeyTest()
+	fmt.Println()
+	RunMixColTest(false)
+	fmt.Println()
+	RunMixColTest(true)
+	fmt.Println()
+	RunBlockEncryptionTest()
+	fmt.Println()
+	RunBlockDecryptionTest()
+	fmt.Println()
 }
