@@ -2,6 +2,7 @@ package aes256go
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"io"
 
@@ -13,18 +14,22 @@ import (
 )
 
 type AES256 struct {
-	Key         [consts.KEY_SIZE]byte
+	Key         []byte
 	ExpandedKey *key.ExpandedKey
 }
 
 // NewAES256 initializes new AES cipher
+// with the key hashed to the right size
+// using SHA256
 // and calculates round keys.
 func NewAES256(k []byte) (*AES256, error) {
-	if len(k) != consts.KEY_SIZE {
+	hashedKey := NewSHA256(k)
+
+	if len(hashedKey) != consts.KEY_SIZE {
 		return nil, errors.New("invalid key size")
 	}
 
-	a := AES256{Key: [32]byte(k)}
+	a := AES256{Key: hashedKey}
 
 	var err error
 	a.ExpandedKey, err = a.NewExpKey()
@@ -34,6 +39,16 @@ func NewAES256(k []byte) (*AES256, error) {
 	}
 
 	return &a, nil
+}
+
+// NewSHA256 returns a hashed byte slice of the input.
+// Used to make sure that the key is exactly 32 bytes.
+//
+// https://en.wikipedia.org/wiki/SHA-2
+func NewSHA256(k []byte) []byte {
+	hash := sha256.New()
+	hash.Write(k)
+	return hash.Sum(nil)
 }
 
 // NewSBox returns a byte slice representation of
@@ -59,7 +74,7 @@ func NewInvSBox(sb *sbox.SBOX) *sbox.SBOX {
 //
 // https://www.samiam.org/key-schedule.html
 func (a *AES256) NewExpKey() (*key.ExpandedKey, error) {
-	xKey, err := key.ExpandKey(a.Key[:])
+	xKey, err := key.ExpandKey(a.Key)
 
 	if err != nil {
 		return nil, err
