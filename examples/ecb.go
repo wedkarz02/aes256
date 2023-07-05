@@ -20,7 +20,7 @@ func EncryptECBExample(key []byte, plainText []byte) []byte {
 
 	// Encrypting the plainText using ECB mode.
 	// Padding can either be ZeroPadding or PKCS7Padding.
-	cipherText, err := cipher.EncryptECB(plainText, padding.PKCS7Padding)
+	cipherText, err := cipher.EncryptECB(plainText, padding.ZeroPadding)
 
 	// Make sure to check for any errors.
 	if err != nil {
@@ -44,7 +44,7 @@ func DecryptECBExample(key []byte, cipherText []byte) []byte {
 	// Decrypting the cipherText using ECB mode.
 	// Padding can either be ZeroPadding or PKCS7Padding.
 	// Make sure that the padding is the same for encryption and decryption.
-	plainText, err := cipher.DecryptBlock(cipherText)
+	plainText, err := cipher.DecryptECB(cipherText, padding.ZeroUnpadding)
 
 	// Make sure to check for any errors.
 	if err != nil {
