@@ -35,7 +35,7 @@ import (
     "log"
 
     "github.com/wedkarz02/aes256go"
-	"github.com/wedkarz02/aes256go/src/padding"
+    "github.com/wedkarz02/aes256go/src/padding"
 )
 
 func main() {
@@ -43,21 +43,21 @@ func main() {
     message := []byte("Hey, new Shrek movie coming out soon (hopefully...)")
 
     // Cipher object initialization.
-	cipher, err := aes256go.NewAES256(key)
+    cipher, err := aes256go.NewAES256(key)
 
-	// Make sure to check for any errors.
-	if err != nil {
-		log.Fatalf("Cipher init error: %v\n", err)
-	}
+    // Make sure to check for any errors.
+    if err != nil {
+        log.Fatalf("Cipher init error: %v\n", err)
+    }
 
-	// Encrypting the plainText using CBC mode.
-	// Padding can either be ZeroPadding or PKCS7Padding.
-	cipherText, err := cipher.EncryptCBC(message, padding.PKCS7Padding)
+    // Encrypting the plainText using CBC mode.
+    // Padding can either be ZeroPadding or PKCS7Padding.
+    cipherText, err := cipher.EncryptCBC(message, padding.PKCS7Padding)
 
-	// Make sure to check for any errors.
-	if err != nil {
-		log.Fatalf("Encryption error: %v\n", err)
-	}
+    // Make sure to check for any errors.
+    if err != nil {
+        log.Fatalf("Encryption error: %v\n", err)
+    }
 
     // Printing the cipherText as bytes.
     for _, b := range cipherText {
