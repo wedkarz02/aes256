@@ -44,7 +44,7 @@ func PKCS7Padding(data []byte) []byte {
 	return paddedData
 }
 
-func PKCS7UnPadding(paddedData []byte) []byte {
+func PKCS7Unpadding(paddedData []byte) []byte {
 	padLength := paddedData[len(paddedData)-1]
 
 	data := make([]byte, len(paddedData)-int(padLength))
