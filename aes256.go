@@ -451,3 +451,98 @@ func (a *AES256) DecryptCBC(cipherText []byte, unpad padding.UnPad) ([]byte, err
 	plainText := unpad(paddedPlain)
 	return plainText, nil
 }
+
+// Data encryption using CFB mode.
+//
+// 1 <= s <= 16 (block size)
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
+func (a *AES256) EncryptCFB(plainText []byte, s int) ([]byte, error) {
+	if s < 1 || s > consts.BLOCK_SIZE {
+		return nil, errors.New("invalid segment size")
+	}
+
+	iv := make([]byte, consts.BLOCK_SIZE)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, errors.New("iv initialization failed")
+	}
+
+	initialIV := make([]byte, len(iv))
+	copy(initialIV, iv)
+
+	var cipherText []byte
+	var i int
+
+	for i = 0; i < len(plainText)-s; i += s {
+		encIV, err := a.EncryptBlock(iv)
+
+		if err != nil {
+			return nil, err
+		}
+
+		streamBlock := encIV[:s]
+		cipherBlock := g.GXorBlock(plainText[i:i+s], streamBlock)
+		cipherText = append(cipherText, cipherBlock...)
+
+		shiftReg := append(iv[s:], cipherBlock...)
+		copy(iv, shiftReg)
+	}
+
+	lastEncIV, err := a.EncryptBlock(iv)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lastStreamBlock := lastEncIV[:s]
+	lastCipherBlock := g.GXorBlock(plainText[i:], lastStreamBlock)
+	cipherText = append(cipherText, lastCipherBlock...)
+
+	cipherText = append(initialIV, cipherText...)
+	return cipherText, nil
+}
+
+// Data decryption using CFB mode.
+//
+// 1 <= s <= 16 (block size)
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)
+func (a *AES256) DecryptCFB(cipherText []byte, s int) ([]byte, error) {
+	if s < 1 || s > consts.BLOCK_SIZE {
+		return nil, errors.New("invalid segment size")
+	}
+
+	iv := make([]byte, consts.BLOCK_SIZE)
+	copy(iv, cipherText[:consts.BLOCK_SIZE])
+
+	cipherText = cipherText[consts.BLOCK_SIZE:]
+	var plainText []byte
+	var i int
+
+	for i = 0; i < len(cipherText)-s; i += s {
+		encIV, err := a.EncryptBlock(iv)
+
+		if err != nil {
+			return nil, err
+		}
+
+		streamBlock := encIV[:s]
+		plainBlock := g.GXorBlock(cipherText[i:i+s], streamBlock)
+		plainText = append(plainText, plainBlock...)
+
+		shiftReg := append(iv[s:], cipherText[i:i+s]...)
+		copy(iv, shiftReg)
+	}
+
+	lastEncIV, err := a.EncryptBlock(iv)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lastStreamBlock := lastEncIV[:s]
+	lastPlainBlock := g.GXorBlock(cipherText[i:], lastStreamBlock)
+	plainText = append(plainText, lastPlainBlock...)
+
+	return plainText, nil
+}
