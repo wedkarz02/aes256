@@ -8,6 +8,7 @@ Go implementation of 256 bit version of the Advanced Encryption Standard algorit
 Current version provides access to raw block encryption as well as these modes of operation:
  * ECB - Electronic Code Book
  * CBC - Cipher Block Chaining
+ * CFB - Cipher Feedback
 
 As always, although the algorithm is correct, I do not recommend using this package for anything that needs actual security.
 
