@@ -1,8 +1,6 @@
 package counter
 
 import (
-	"errors"
-
 	"github.com/wedkarz02/aes256go/src/consts"
 )
 
@@ -10,15 +8,8 @@ type Counter struct {
 	Bytes [consts.COUNTER_SIZE]byte
 }
 
-func NewCounter(src []byte) (*Counter, error) {
-	if len(src) != consts.COUNTER_SIZE {
-		return &Counter{}, errors.New("invalid src size")
-	}
-
-	counter := new(Counter)
-	copy(counter.Bytes[:], src)
-
-	return counter, nil
+func NewCounter() *Counter {
+	return &Counter{}
 }
 
 func (c *Counter) Increment() {
