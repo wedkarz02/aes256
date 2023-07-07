@@ -9,6 +9,7 @@ Current version provides access to raw block encryption as well as these modes o
  * ECB - Electronic Code Book
  * CBC - Cipher Block Chaining
  * CFB - Cipher Feedback
+ * OFB - Output Feedback
 
 As always, although the algorithm is correct, I do not recommend using this package for anything that needs actual security.
 
