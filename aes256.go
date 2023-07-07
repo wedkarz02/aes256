@@ -462,7 +462,7 @@ func (a *AES256) EncryptCFB(plainText []byte, s int) ([]byte, error) {
 		return nil, errors.New("invalid segment size")
 	}
 
-	iv := make([]byte, consts.BLOCK_SIZE)
+	iv := make([]byte, consts.IV_SIZE)
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, errors.New("iv initialization failed")
 	}
@@ -512,10 +512,10 @@ func (a *AES256) DecryptCFB(cipherText []byte, s int) ([]byte, error) {
 		return nil, errors.New("invalid segment size")
 	}
 
-	iv := make([]byte, consts.BLOCK_SIZE)
-	copy(iv, cipherText[:consts.BLOCK_SIZE])
+	iv := make([]byte, consts.IV_SIZE)
+	copy(iv, cipherText[:consts.IV_SIZE])
 
-	cipherText = cipherText[consts.BLOCK_SIZE:]
+	cipherText = cipherText[consts.IV_SIZE:]
 	var plainText []byte
 	var i int
 
@@ -542,6 +542,86 @@ func (a *AES256) DecryptCFB(cipherText []byte, s int) ([]byte, error) {
 
 	lastStreamBlock := lastEncIV[:s]
 	lastPlainBlock := g.GXorBlock(cipherText[i:], lastStreamBlock)
+	plainText = append(plainText, lastPlainBlock...)
+
+	return plainText, nil
+}
+
+// Data encryption using OFB mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Output_feedback_(OFB)
+func (a *AES256) EncryptOFB(plainText []byte) ([]byte, error) {
+	iv := make([]byte, consts.IV_SIZE)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, errors.New("iv initialization failed")
+	}
+
+	initialIV := make([]byte, len(iv))
+	copy(initialIV, iv)
+
+	var cipherText []byte
+	var i int
+
+	lastLen := len(plainText) % consts.BLOCK_SIZE
+
+	for i = 0; i < len(plainText)-lastLen; i += consts.BLOCK_SIZE {
+		encIV, err := a.EncryptBlock(iv)
+
+		if err != nil {
+			return nil, err
+		}
+
+		copy(iv, encIV)
+		cipherBlock := g.GXorBlock(plainText[i:i+consts.BLOCK_SIZE], encIV)
+		cipherText = append(cipherText, cipherBlock...)
+	}
+
+	lastEncIV, err := a.EncryptBlock(iv)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lastCipherBlock := g.GXorBlock(plainText[i:], lastEncIV[:lastLen])
+	cipherText = append(cipherText, lastCipherBlock...)
+
+	cipherText = append(initialIV, cipherText...)
+	return cipherText, nil
+}
+
+// Data decryption using OFB mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Output_feedback_(OFB)
+func (a *AES256) DecryptOFB(cipherText []byte) ([]byte, error) {
+	iv := make([]byte, consts.IV_SIZE)
+	copy(iv, cipherText[:consts.IV_SIZE])
+
+	cipherText = cipherText[consts.IV_SIZE:]
+
+	var plainText []byte
+	var i int
+
+	lastLen := len(cipherText) % consts.BLOCK_SIZE
+
+	for i = 0; i < len(cipherText)-lastLen; i += consts.BLOCK_SIZE {
+		encIV, err := a.EncryptBlock(iv)
+
+		if err != nil {
+			return nil, err
+		}
+
+		copy(iv, encIV)
+		plainBlock := g.GXorBlock(cipherText[i:i+consts.BLOCK_SIZE], encIV)
+		plainText = append(plainText, plainBlock...)
+	}
+
+	lastEncIV, err := a.EncryptBlock(iv)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lastPlainBlock := g.GXorBlock(cipherText[i:], lastEncIV[:lastLen])
 	plainText = append(plainText, lastPlainBlock...)
 
 	return plainText, nil
