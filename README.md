@@ -1,8 +1,9 @@
-# AES 256
+# AES256
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/wedkarz02/aes256go.svg)](https://pkg.go.dev/github.com/wedkarz02/aes256go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/wedkarz02/aes256go)](https://goreportcard.com/report/github.com/wedkarz02/aes256go)
 ![GitHub release (with filter)](https://img.shields.io/github/v/release/wedkarz02/aes256go)
+[![GitHub](https://img.shields.io/github/license/wedkarz02/aes256go)](https://github.com/wedkarz02/aes256go/blob/main/LICENSE)
 
 Go implementation of 256 bit version of the Advanced Encryption Standard algorithm. It is tested with [test vectors provided by NIST](https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/aes/AESAVS.pdf), among some others, to make sure that the implementation is correct. \
 Current version provides access to raw block encryption as well as these modes of operation:
@@ -10,6 +11,7 @@ Current version provides access to raw block encryption as well as these modes o
  * CBC - Cipher Block Chaining
  * CFB - Cipher Feedback
  * OFB - Output Feedback
+ * CTR - Counter
 
 As always, although the algorithm is correct, I do not recommend using this package for anything that needs actual security.
 
