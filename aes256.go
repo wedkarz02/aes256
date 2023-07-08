@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/wedkarz02/aes256go/src/consts"
+	"github.com/wedkarz02/aes256go/src/counter"
 	g "github.com/wedkarz02/aes256go/src/galois"
 	"github.com/wedkarz02/aes256go/src/key"
 	"github.com/wedkarz02/aes256go/src/padding"
@@ -622,6 +623,121 @@ func (a *AES256) DecryptOFB(cipherText []byte) ([]byte, error) {
 	}
 
 	lastPlainBlock := g.GXorBlock(cipherText[i:], lastEncIV[:lastLen])
+	plainText = append(plainText, lastPlainBlock...)
+
+	return plainText, nil
+}
+
+// Data encryption using CTR mode.
+//
+// Please keep in mind that the counter is a 32 bit number, therefore you can
+// encrypt 2^32 blocks of data (roughly 68 gigabytes) before it resets. If you need to encrypt more
+// data than that, split it to multiple chunks and run the function for each one.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)
+func (a *AES256) EncryptCTR(plainText []byte) ([]byte, error) {
+	nonce := make([]byte, consts.NONCE_SIZE)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	ctr := counter.NewCounter()
+
+	var inputBlock []byte
+	inputBlock = append(inputBlock, nonce...)
+	inputBlock = append(inputBlock, ctr.Bytes[:]...)
+
+	if len(inputBlock) != consts.BLOCK_SIZE {
+		return nil, errors.New("input block seeding failed")
+	}
+
+	var cipherText []byte
+	var i int
+
+	lastLen := len(plainText) % consts.BLOCK_SIZE
+
+	for i = 0; i < len(plainText)-lastLen; i += consts.BLOCK_SIZE {
+		encBlock, err := a.EncryptBlock(inputBlock)
+
+		if err != nil {
+			return nil, err
+		}
+
+		cipherBlock := g.GXorBlock(plainText[i:i+consts.BLOCK_SIZE], encBlock)
+		cipherText = append(cipherText, cipherBlock...)
+
+		ctr.Increment()
+
+		var incrementedBlock []byte
+		incrementedBlock = append(incrementedBlock, nonce...)
+		incrementedBlock = append(incrementedBlock, ctr.Bytes[:]...)
+
+		copy(inputBlock, incrementedBlock)
+	}
+
+	lastEncBlock, err := a.EncryptBlock(inputBlock)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lastCipherBlock := g.GXorBlock(plainText[i:], lastEncBlock[:lastLen])
+	cipherText = append(cipherText, lastCipherBlock...)
+
+	cipherText = append(nonce, cipherText...)
+	return cipherText, nil
+}
+
+// Data decryption using CTR mode.
+//
+// https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)
+func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
+	nonce := make([]byte, consts.NONCE_SIZE)
+	copy(nonce, cipherText[:consts.NONCE_SIZE])
+
+	cipherText = cipherText[consts.NONCE_SIZE:]
+
+	ctr := counter.NewCounter()
+
+	var inputBlock []byte
+	inputBlock = append(inputBlock, nonce...)
+	inputBlock = append(inputBlock, ctr.Bytes[:]...)
+
+	if len(inputBlock) != consts.BLOCK_SIZE {
+		return nil, errors.New("input block seeding failed")
+	}
+
+	var plainText []byte
+	var i int
+
+	lastLen := len(cipherText) % consts.BLOCK_SIZE
+
+	for i = 0; i < len(cipherText)-lastLen; i += consts.BLOCK_SIZE {
+		encBlock, err := a.EncryptBlock(inputBlock)
+
+		if err != nil {
+			return nil, err
+		}
+
+		plainBlock := g.GXorBlock(cipherText[i:i+consts.BLOCK_SIZE], encBlock)
+		plainText = append(plainText, plainBlock...)
+
+		ctr.Increment()
+
+		var incrementedBlock []byte
+		incrementedBlock = append(incrementedBlock, nonce...)
+		incrementedBlock = append(incrementedBlock, ctr.Bytes[:]...)
+
+		copy(inputBlock, incrementedBlock)
+	}
+
+	lastEncBlock, err := a.EncryptBlock(inputBlock)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lastPlainBlock := g.GXorBlock(cipherText[i:], lastEncBlock[:lastLen])
 	plainText = append(plainText, lastPlainBlock...)
 
 	return plainText, nil
