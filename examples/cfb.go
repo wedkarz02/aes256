@@ -6,7 +6,7 @@ import (
 	"github.com/wedkarz02/aes256go"
 )
 
-// This is an example usage of CBC mode encryption.
+// This is an example usage of CFB mode encryption.
 func EncryptCFBExample(key []byte, plainText []byte, segment int) []byte {
 
 	// Cipher object initialization.
@@ -28,7 +28,7 @@ func EncryptCFBExample(key []byte, plainText []byte, segment int) []byte {
 	return cipherText
 }
 
-// This is an example usage of CBC mode decryption.
+// This is an example usage of CFB mode decryption.
 func DecryptCFBExample(key []byte, cipherText []byte, segment int) []byte {
 
 	// Cipher object initialization.
