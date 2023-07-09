@@ -746,6 +746,7 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
+// CoreBlockCTR is used to encrypt/decrypt the data in counter modes (CTR and GCM).
 func (a *AES256) CoreBlockCTR(data []byte, nonce []byte, ctr *counter.Counter) ([]byte, error) {
 	if len(nonce) != consts.NONCE_SIZE {
 		return nil, errors.New("invalid nonce size")
@@ -795,6 +796,12 @@ func (a *AES256) CoreBlockCTR(data []byte, nonce []byte, ctr *counter.Counter) (
 	return outputData, nil
 }
 
+// Data encryption and authentication using GCM mode. Nonce is prepended to the cipherText
+// and the authentication tag is appended to the cipherText.
+//
+// Both plainText and authData will be authenticated, but only plainText is encrypted.
+//
+// https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
 func (a *AES256) EncryptGCM(plainText []byte, authData []byte) ([]byte, error) {
 	nonce := make([]byte, consts.NONCE_SIZE)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
@@ -822,6 +829,12 @@ func (a *AES256) EncryptGCM(plainText []byte, authData []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
+// Data decryption and authentication using GCM mode. Nonce is prepended to the cipherText
+// and the authentication tag is appended to the cipherText.
+//
+// Both cipherText and authData will be authenticated, but only cipherText is decrypted.
+//
+// https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
 func (a *AES256) DecryptGCM(cipherText []byte, authData []byte) ([]byte, error) {
 	nonce := make([]byte, consts.NONCE_SIZE)
 	copy(nonce, cipherText[:consts.NONCE_SIZE])
@@ -853,6 +866,9 @@ func (a *AES256) DecryptGCM(cipherText []byte, authData []byte) ([]byte, error) 
 	return plainText, nil
 }
 
+// GMAC calculates a tag used to authenticate data during GCM encryption/decryption.
+//
+// https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
 func (a *AES256) GMAC(cipherData []byte, authData []byte, nonce []byte) ([]byte, error) {
 	if len(nonce) != consts.NONCE_SIZE {
 		return nil, errors.New("invalid nonce size")
