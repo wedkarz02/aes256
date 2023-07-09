@@ -19,7 +19,7 @@ import (
 
 type AES256 struct {
 	Key         []byte
-	ExpandedKey *key.ExpandedKey
+	expandedKey *key.ExpandedKey
 }
 
 // NewAES256 initializes new AES cipher
@@ -27,7 +27,7 @@ type AES256 struct {
 // using SHA256
 // and calculates round keys.
 func NewAES256(k []byte) (*AES256, error) {
-	hashedKey := NewSHA256(k)
+	hashedKey := newSHA256(k)
 
 	if len(hashedKey) != consts.KEY_SIZE {
 		return nil, errors.New("invalid key size")
@@ -36,7 +36,7 @@ func NewAES256(k []byte) (*AES256, error) {
 	a := AES256{Key: hashedKey}
 
 	var err error
-	a.ExpandedKey, err = a.NewExpKey()
+	a.expandedKey, err = a.newExpKey()
 
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func NewAES256(k []byte) (*AES256, error) {
 // Used to make sure that the key is exactly 32 bytes.
 //
 // https://en.wikipedia.org/wiki/SHA-2
-func NewSHA256(k []byte) []byte {
+func newSHA256(k []byte) []byte {
 	hash := sha256.New()
 	hash.Write(k)
 	return hash.Sum(nil)
@@ -59,7 +59,7 @@ func NewSHA256(k []byte) []byte {
 // the AES substitution look up table.
 //
 // https://en.wikipedia.org/wiki/Rijndael_S-box
-func NewSBox() *sbox.SBOX {
+func newSBox() *sbox.SBOX {
 	return sbox.InitSBOX()
 }
 
@@ -67,7 +67,7 @@ func NewSBox() *sbox.SBOX {
 // the AES inverse substitution look up table.
 //
 // https://en.wikipedia.org/wiki/Rijndael_S-box
-func NewInvSBox(sb *sbox.SBOX) *sbox.SBOX {
+func newInvSBox(sb *sbox.SBOX) *sbox.SBOX {
 	return sbox.InitInvSBOX(sb)
 }
 
@@ -77,7 +77,7 @@ func NewInvSBox(sb *sbox.SBOX) *sbox.SBOX {
 // https://en.wikipedia.org/wiki/AES_key_schedule
 //
 // https://www.samiam.org/key-schedule.html
-func (a *AES256) NewExpKey() (*key.ExpandedKey, error) {
+func (a *AES256) newExpKey() (*key.ExpandedKey, error) {
 	xKey, err := key.ExpandKey(a.Key)
 
 	if err != nil {
@@ -92,14 +92,14 @@ func (a *AES256) NewExpKey() (*key.ExpandedKey, error) {
 // byte from the sbox.
 //
 // https://pl.wikipedia.org/wiki/Advanced_Encryption_Standard
-func (a *AES256) SubBytes(state []byte) ([]byte, error) {
+func (a *AES256) subBytes(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
 
 	var subState []byte
 
-	sbox := NewSBox()
+	sbox := newSBox()
 	for i := range state {
 		subState = append(subState, sbox[state[i]])
 	}
@@ -111,14 +111,14 @@ func (a *AES256) SubBytes(state []byte) ([]byte, error) {
 // allowing decryption.
 //
 // https://pl.wikipedia.org/wiki/Advanced_Encryption_Standard
-func (a *AES256) InvSubBytes(state []byte) ([]byte, error) {
+func (a *AES256) invSubBytes(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
 
 	var invSubState []byte
 
-	invsbox := NewInvSBox(NewSBox())
+	invsbox := newInvSBox(newSBox())
 	for i := range state {
 		invSubState = append(invSubState, invsbox[state[i]])
 	}
@@ -130,7 +130,7 @@ func (a *AES256) InvSubBytes(state []byte) ([]byte, error) {
 // rows has been transposed in an AES specific way.
 //
 // https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
-func (a *AES256) ShiftRows(state []byte) ([]byte, error) {
+func (a *AES256) shiftRows(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
@@ -154,7 +154,7 @@ func (a *AES256) ShiftRows(state []byte) ([]byte, error) {
 // allowing decryption.
 //
 // https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
-func (a *AES256) InvShiftRows(state []byte) ([]byte, error) {
+func (a *AES256) invShiftRows(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
@@ -178,7 +178,7 @@ func (a *AES256) InvShiftRows(state []byte) ([]byte, error) {
 // Used with ShiftRows in order to create diffusion.
 //
 // https://en.wikipedia.org/wiki/Rijndael_MixColumns
-func (a *AES256) MixColumns(state []byte) ([]byte, error) {
+func (a *AES256) mixColumns(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
@@ -200,7 +200,7 @@ func (a *AES256) MixColumns(state []byte) ([]byte, error) {
 // allowing decryption.
 //
 // https://en.wikipedia.org/wiki/Rijndael_MixColumns
-func (a *AES256) InvMixColumns(state []byte) ([]byte, error) {
+func (a *AES256) invMixColumns(state []byte) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
@@ -223,7 +223,7 @@ func (a *AES256) InvMixColumns(state []byte) ([]byte, error) {
 // for each round of encryption/decryption.
 //
 // https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
-func (a *AES256) AddRoundKey(state []byte, roundIdx int) ([]byte, error) {
+func (a *AES256) addRoundKey(state []byte, roundIdx int) ([]byte, error) {
 	if len(state) != consts.BLOCK_SIZE {
 		return nil, errors.New("state size not matching the block size")
 	}
@@ -232,7 +232,7 @@ func (a *AES256) AddRoundKey(state []byte, roundIdx int) ([]byte, error) {
 		return nil, errors.New("round index out of range")
 	}
 
-	roundKey := a.ExpandedKey[roundIdx*consts.BLOCK_SIZE : (roundIdx+1)*consts.BLOCK_SIZE]
+	roundKey := a.expandedKey[roundIdx*consts.BLOCK_SIZE : (roundIdx+1)*consts.BLOCK_SIZE]
 
 	newState := make([]byte, len(state))
 	copy(newState, state)
@@ -257,44 +257,44 @@ func (a *AES256) EncryptBlock(state []byte) ([]byte, error) {
 	cipherText := make([]byte, len(state))
 	copy(cipherText, state)
 
-	cipherText, err = a.AddRoundKey(cipherText, 0)
+	cipherText, err = a.addRoundKey(cipherText, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	for roundIdx := 1; roundIdx < consts.NR; roundIdx++ {
-		cipherText, err = a.SubBytes(cipherText)
+		cipherText, err = a.subBytes(cipherText)
 		if err != nil {
 			return nil, err
 		}
 
-		cipherText, err = a.ShiftRows(cipherText)
+		cipherText, err = a.shiftRows(cipherText)
 		if err != nil {
 			return nil, err
 		}
 
-		cipherText, err = a.MixColumns(cipherText)
+		cipherText, err = a.mixColumns(cipherText)
 		if err != nil {
 			return nil, err
 		}
 
-		cipherText, err = a.AddRoundKey(cipherText, roundIdx)
+		cipherText, err = a.addRoundKey(cipherText, roundIdx)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	cipherText, err = a.SubBytes(cipherText)
+	cipherText, err = a.subBytes(cipherText)
 	if err != nil {
 		return nil, err
 	}
 
-	cipherText, err = a.ShiftRows(cipherText)
+	cipherText, err = a.shiftRows(cipherText)
 	if err != nil {
 		return nil, err
 	}
 
-	cipherText, err = a.AddRoundKey(cipherText, consts.NR)
+	cipherText, err = a.addRoundKey(cipherText, consts.NR)
 	if err != nil {
 		return nil, err
 	}
@@ -315,44 +315,44 @@ func (a *AES256) DecryptBlock(state []byte) ([]byte, error) {
 	plainText := make([]byte, len(state))
 	copy(plainText, state)
 
-	plainText, err = a.AddRoundKey(plainText, consts.NR)
+	plainText, err = a.addRoundKey(plainText, consts.NR)
 	if err != nil {
 		return nil, err
 	}
 
 	for roundIdx := consts.NR - 1; roundIdx > 0; roundIdx-- {
-		plainText, err = a.InvShiftRows(plainText)
+		plainText, err = a.invShiftRows(plainText)
 		if err != nil {
 			return nil, err
 		}
 
-		plainText, err = a.InvSubBytes(plainText)
+		plainText, err = a.invSubBytes(plainText)
 		if err != nil {
 			return nil, err
 		}
 
-		plainText, err = a.AddRoundKey(plainText, roundIdx)
+		plainText, err = a.addRoundKey(plainText, roundIdx)
 		if err != nil {
 			return nil, err
 		}
 
-		plainText, err = a.InvMixColumns(plainText)
+		plainText, err = a.invMixColumns(plainText)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	plainText, err = a.InvShiftRows(plainText)
+	plainText, err = a.invShiftRows(plainText)
 	if err != nil {
 		return nil, err
 	}
 
-	plainText, err = a.InvSubBytes(plainText)
+	plainText, err = a.invSubBytes(plainText)
 	if err != nil {
 		return nil, err
 	}
 
-	plainText, err = a.AddRoundKey(plainText, 0)
+	plainText, err = a.addRoundKey(plainText, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +645,7 @@ func (a *AES256) EncryptCTR(plainText []byte) ([]byte, error) {
 	}
 
 	ctr := counter.NewCounter()
-	cipherText, err := a.CoreBlockCTR(plainText, nonce, ctr)
+	cipherText, err := a.coreBlockCTR(plainText, nonce, ctr)
 
 	if err != nil {
 		return nil, err
@@ -665,7 +665,7 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 	cipherText = cipherText[consts.NONCE_SIZE:]
 
 	ctr := counter.NewCounter()
-	plainText, err := a.CoreBlockCTR(cipherText, nonce, ctr)
+	plainText, err := a.coreBlockCTR(cipherText, nonce, ctr)
 
 	if err != nil {
 		return nil, err
@@ -675,7 +675,7 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 }
 
 // CoreBlockCTR is used to encrypt/decrypt the data in counter modes (CTR and GCM).
-func (a *AES256) CoreBlockCTR(data []byte, nonce []byte, ctr *counter.Counter) ([]byte, error) {
+func (a *AES256) coreBlockCTR(data []byte, nonce []byte, ctr *counter.Counter) ([]byte, error) {
 	if len(nonce) != consts.NONCE_SIZE {
 		return nil, errors.New("invalid nonce size")
 	}
@@ -739,7 +739,7 @@ func (a *AES256) EncryptGCM(plainText []byte, authData []byte) ([]byte, error) {
 	ctr := counter.NewCounter()
 	ctr.Increment()
 
-	cipherText, err := a.CoreBlockCTR(plainText, nonce, ctr)
+	cipherText, err := a.coreBlockCTR(plainText, nonce, ctr)
 
 	if err != nil {
 		return nil, err
@@ -775,7 +775,7 @@ func (a *AES256) DecryptGCM(cipherText []byte, authData []byte) ([]byte, error) 
 	ctr := counter.NewCounter()
 	ctr.Increment()
 
-	plainText, err := a.CoreBlockCTR(cipherText, nonce, ctr)
+	plainText, err := a.coreBlockCTR(cipherText, nonce, ctr)
 
 	if err != nil {
 		return nil, err
@@ -826,7 +826,7 @@ func (a *AES256) GMAC(cipherData []byte, authData []byte, nonce []byte) ([]byte,
 	hashData := append(append(paddedAuth, paddedCipher...), totalLen...)
 
 	s := g.Ghash(hashData, hashSubKey)
-	tag, err := a.CoreBlockCTR(s, nonce, preCtr)
+	tag, err := a.coreBlockCTR(s, nonce, preCtr)
 
 	if err != nil {
 		return nil, err
