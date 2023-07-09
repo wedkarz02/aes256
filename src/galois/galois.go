@@ -1,5 +1,7 @@
 package galois
 
+import "github.com/wedkarz02/aes256go/src/consts"
+
 func Gadd(a byte, b byte) byte {
 	return a ^ b
 }
@@ -37,4 +39,20 @@ func GXorBlock(a []byte, b []byte) []byte {
 	}
 
 	return result
+}
+
+func GmulBlocks(x []byte, y []byte) []byte {
+	prod := make([]byte, consts.BLOCK_SIZE)
+
+	for i := 0; i < 16; i++ {
+		for j := 0; j < 8; j++ {
+			if (y[i]>>uint(j))&1 == 1 {
+				for k := 0; k < 16; k++ {
+					prod[k] = Gadd(prod[k], x[(i+k)%16])
+				}
+			}
+		}
+	}
+
+	return prod
 }
