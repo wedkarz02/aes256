@@ -12,8 +12,9 @@ Current version provides access to raw block encryption as well as these modes o
  * CFB - Cipher Feedback
  * OFB - Output Feedback
  * CTR - Counter
+ * GCM - Galois Counter Mode
 
-As always, although the algorithm is correct, I do not recommend using this package for anything that needs actual security.
+As always, I do not recommend using this package for anything that needs actual security.
 
 # Requirements
  * [Go v1.20+](https://go.dev/dl/)
