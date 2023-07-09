@@ -742,3 +742,33 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 
 	return plainText, nil
 }
+
+func (a *AES256) CoreBlockCTR(dataBlock []byte, nonce []byte, ctr *counter.Counter) ([]byte, error) {
+	if len(dataBlock) != consts.BLOCK_SIZE {
+		return nil, errors.New("invalid data block size")
+	}
+
+	if len(nonce) != consts.NONCE_SIZE {
+		return nil, errors.New("invalid nonce size")
+	}
+
+	var inputBlock []byte
+	inputBlock = append(inputBlock, nonce...)
+	inputBlock = append(inputBlock, ctr.Bytes[:]...)
+
+	streamBlock, err := a.EncryptBlock(inputBlock)
+
+	if err != nil {
+		return nil, err
+	}
+
+	outputBlock := g.GXorBlock(dataBlock, streamBlock)
+	ctr.Increment()
+
+	return outputBlock, nil
+}
+
+// TODO: Method scope.
+//       Break CTR/OFB/CFB into many functions so that decryption can just call
+//       encryption where possible -> less repeated code.
+//       Examples for CTR and GCM.
