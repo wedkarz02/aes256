@@ -44,7 +44,7 @@ func DecryptOFBExample(key []byte, cipherText []byte) []byte {
 
 	// Make sure to check for any errors.
 	if err != nil {
-		log.Fatalf("Encryption error: %v\n", err)
+		log.Fatalf("Decryption error: %v\n", err)
 	}
 
 	return plainText
