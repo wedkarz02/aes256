@@ -645,47 +645,11 @@ func (a *AES256) EncryptCTR(plainText []byte) ([]byte, error) {
 	}
 
 	ctr := counter.NewCounter()
-
-	var inputBlock []byte
-	inputBlock = append(inputBlock, nonce...)
-	inputBlock = append(inputBlock, ctr.Bytes[:]...)
-
-	if len(inputBlock) != consts.BLOCK_SIZE {
-		return nil, errors.New("input block seeding failed")
-	}
-
-	var cipherText []byte
-	var i int
-
-	lastLen := len(plainText) % consts.BLOCK_SIZE
-
-	for i = 0; i < len(plainText)-lastLen; i += consts.BLOCK_SIZE {
-		encBlock, err := a.EncryptBlock(inputBlock)
-
-		if err != nil {
-			return nil, err
-		}
-
-		cipherBlock := g.GxorBlocks(plainText[i:i+consts.BLOCK_SIZE], encBlock)
-		cipherText = append(cipherText, cipherBlock...)
-
-		ctr.Increment()
-
-		var incrementedBlock []byte
-		incrementedBlock = append(incrementedBlock, nonce...)
-		incrementedBlock = append(incrementedBlock, ctr.Bytes[:]...)
-
-		copy(inputBlock, incrementedBlock)
-	}
-
-	lastEncBlock, err := a.EncryptBlock(inputBlock)
+	cipherText, err := a.CoreBlockCTR(plainText, nonce, ctr)
 
 	if err != nil {
 		return nil, err
 	}
-
-	lastCipherBlock := g.GxorBlocks(plainText[i:], lastEncBlock[:lastLen])
-	cipherText = append(cipherText, lastCipherBlock...)
 
 	cipherText = append(nonce, cipherText...)
 	return cipherText, nil
@@ -701,47 +665,11 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 	cipherText = cipherText[consts.NONCE_SIZE:]
 
 	ctr := counter.NewCounter()
-
-	var inputBlock []byte
-	inputBlock = append(inputBlock, nonce...)
-	inputBlock = append(inputBlock, ctr.Bytes[:]...)
-
-	if len(inputBlock) != consts.BLOCK_SIZE {
-		return nil, errors.New("input block seeding failed")
-	}
-
-	var plainText []byte
-	var i int
-
-	lastLen := len(cipherText) % consts.BLOCK_SIZE
-
-	for i = 0; i < len(cipherText)-lastLen; i += consts.BLOCK_SIZE {
-		encBlock, err := a.EncryptBlock(inputBlock)
-
-		if err != nil {
-			return nil, err
-		}
-
-		plainBlock := g.GxorBlocks(cipherText[i:i+consts.BLOCK_SIZE], encBlock)
-		plainText = append(plainText, plainBlock...)
-
-		ctr.Increment()
-
-		var incrementedBlock []byte
-		incrementedBlock = append(incrementedBlock, nonce...)
-		incrementedBlock = append(incrementedBlock, ctr.Bytes[:]...)
-
-		copy(inputBlock, incrementedBlock)
-	}
-
-	lastEncBlock, err := a.EncryptBlock(inputBlock)
+	plainText, err := a.CoreBlockCTR(cipherText, nonce, ctr)
 
 	if err != nil {
 		return nil, err
 	}
-
-	lastPlainBlock := g.GxorBlocks(cipherText[i:], lastEncBlock[:lastLen])
-	plainText = append(plainText, lastPlainBlock...)
 
 	return plainText, nil
 }
