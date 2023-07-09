@@ -56,3 +56,14 @@ func GmulBlocks(x []byte, y []byte) []byte {
 
 	return prod
 }
+
+func Ghash(x []byte, h []byte) []byte {
+	hash := make([]byte, consts.BLOCK_SIZE)
+
+	for i := 0; i < len(x); i += consts.BLOCK_SIZE {
+		hash = GXorBlock(x[i:i+consts.BLOCK_SIZE], hash)
+		hash = GmulBlocks(hash, h)
+	}
+
+	return hash
+}
