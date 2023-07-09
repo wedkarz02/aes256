@@ -1,10 +1,13 @@
 package aes256go
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"errors"
 	"io"
+	"math"
 
 	"github.com/wedkarz02/aes256go/src/consts"
 	"github.com/wedkarz02/aes256go/src/counter"
@@ -412,7 +415,7 @@ func (a *AES256) EncryptCBC(plainText []byte, pad padding.Pad) ([]byte, error) {
 	cipherText = append(cipherText, iv...)
 
 	for i := 0; i < len(paddedPlain); i += consts.BLOCK_SIZE {
-		maskedBlock := g.GXorBlock(paddedPlain[i:i+consts.BLOCK_SIZE], iv)
+		maskedBlock := g.GxorBlocks(paddedPlain[i:i+consts.BLOCK_SIZE], iv)
 		encBlock, err := a.EncryptBlock(maskedBlock)
 
 		if err != nil {
@@ -443,7 +446,7 @@ func (a *AES256) DecryptCBC(cipherText []byte, unpad padding.UnPad) ([]byte, err
 			return nil, err
 		}
 
-		decBlock = g.GXorBlock(decBlock, iv)
+		decBlock = g.GxorBlocks(decBlock, iv)
 		copy(iv, strippedCipher[i:i+consts.BLOCK_SIZE])
 
 		paddedPlain = append(paddedPlain, decBlock...)
@@ -482,7 +485,7 @@ func (a *AES256) EncryptCFB(plainText []byte, s int) ([]byte, error) {
 		}
 
 		streamBlock := encIV[:s]
-		cipherBlock := g.GXorBlock(plainText[i:i+s], streamBlock)
+		cipherBlock := g.GxorBlocks(plainText[i:i+s], streamBlock)
 		cipherText = append(cipherText, cipherBlock...)
 
 		shiftReg := append(iv[s:], cipherBlock...)
@@ -496,7 +499,7 @@ func (a *AES256) EncryptCFB(plainText []byte, s int) ([]byte, error) {
 	}
 
 	lastStreamBlock := lastEncIV[:s]
-	lastCipherBlock := g.GXorBlock(plainText[i:], lastStreamBlock)
+	lastCipherBlock := g.GxorBlocks(plainText[i:], lastStreamBlock)
 	cipherText = append(cipherText, lastCipherBlock...)
 
 	cipherText = append(initialIV, cipherText...)
@@ -528,7 +531,7 @@ func (a *AES256) DecryptCFB(cipherText []byte, s int) ([]byte, error) {
 		}
 
 		streamBlock := encIV[:s]
-		plainBlock := g.GXorBlock(cipherText[i:i+s], streamBlock)
+		plainBlock := g.GxorBlocks(cipherText[i:i+s], streamBlock)
 		plainText = append(plainText, plainBlock...)
 
 		shiftReg := append(iv[s:], cipherText[i:i+s]...)
@@ -542,7 +545,7 @@ func (a *AES256) DecryptCFB(cipherText []byte, s int) ([]byte, error) {
 	}
 
 	lastStreamBlock := lastEncIV[:s]
-	lastPlainBlock := g.GXorBlock(cipherText[i:], lastStreamBlock)
+	lastPlainBlock := g.GxorBlocks(cipherText[i:], lastStreamBlock)
 	plainText = append(plainText, lastPlainBlock...)
 
 	return plainText, nil
@@ -573,7 +576,7 @@ func (a *AES256) EncryptOFB(plainText []byte) ([]byte, error) {
 		}
 
 		copy(iv, encIV)
-		cipherBlock := g.GXorBlock(plainText[i:i+consts.BLOCK_SIZE], encIV)
+		cipherBlock := g.GxorBlocks(plainText[i:i+consts.BLOCK_SIZE], encIV)
 		cipherText = append(cipherText, cipherBlock...)
 	}
 
@@ -583,7 +586,7 @@ func (a *AES256) EncryptOFB(plainText []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	lastCipherBlock := g.GXorBlock(plainText[i:], lastEncIV[:lastLen])
+	lastCipherBlock := g.GxorBlocks(plainText[i:], lastEncIV[:lastLen])
 	cipherText = append(cipherText, lastCipherBlock...)
 
 	cipherText = append(initialIV, cipherText...)
@@ -612,7 +615,7 @@ func (a *AES256) DecryptOFB(cipherText []byte) ([]byte, error) {
 		}
 
 		copy(iv, encIV)
-		plainBlock := g.GXorBlock(cipherText[i:i+consts.BLOCK_SIZE], encIV)
+		plainBlock := g.GxorBlocks(cipherText[i:i+consts.BLOCK_SIZE], encIV)
 		plainText = append(plainText, plainBlock...)
 	}
 
@@ -622,7 +625,7 @@ func (a *AES256) DecryptOFB(cipherText []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	lastPlainBlock := g.GXorBlock(cipherText[i:], lastEncIV[:lastLen])
+	lastPlainBlock := g.GxorBlocks(cipherText[i:], lastEncIV[:lastLen])
 	plainText = append(plainText, lastPlainBlock...)
 
 	return plainText, nil
@@ -663,7 +666,7 @@ func (a *AES256) EncryptCTR(plainText []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		cipherBlock := g.GXorBlock(plainText[i:i+consts.BLOCK_SIZE], encBlock)
+		cipherBlock := g.GxorBlocks(plainText[i:i+consts.BLOCK_SIZE], encBlock)
 		cipherText = append(cipherText, cipherBlock...)
 
 		ctr.Increment()
@@ -681,7 +684,7 @@ func (a *AES256) EncryptCTR(plainText []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	lastCipherBlock := g.GXorBlock(plainText[i:], lastEncBlock[:lastLen])
+	lastCipherBlock := g.GxorBlocks(plainText[i:], lastEncBlock[:lastLen])
 	cipherText = append(cipherText, lastCipherBlock...)
 
 	cipherText = append(nonce, cipherText...)
@@ -719,7 +722,7 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		plainBlock := g.GXorBlock(cipherText[i:i+consts.BLOCK_SIZE], encBlock)
+		plainBlock := g.GxorBlocks(cipherText[i:i+consts.BLOCK_SIZE], encBlock)
 		plainText = append(plainText, plainBlock...)
 
 		ctr.Increment()
@@ -737,38 +740,153 @@ func (a *AES256) DecryptCTR(cipherText []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	lastPlainBlock := g.GXorBlock(cipherText[i:], lastEncBlock[:lastLen])
+	lastPlainBlock := g.GxorBlocks(cipherText[i:], lastEncBlock[:lastLen])
 	plainText = append(plainText, lastPlainBlock...)
 
 	return plainText, nil
 }
 
-func (a *AES256) CoreBlockCTR(dataBlock []byte, nonce []byte, ctr *counter.Counter) ([]byte, error) {
-	if len(dataBlock) != consts.BLOCK_SIZE {
-		return nil, errors.New("invalid data block size")
-	}
-
+func (a *AES256) CoreBlockCTR(data []byte, nonce []byte, ctr *counter.Counter) ([]byte, error) {
 	if len(nonce) != consts.NONCE_SIZE {
 		return nil, errors.New("invalid nonce size")
+	}
+
+	if data == nil {
+		return data, nil
 	}
 
 	var inputBlock []byte
 	inputBlock = append(inputBlock, nonce...)
 	inputBlock = append(inputBlock, ctr.Bytes[:]...)
 
-	streamBlock, err := a.EncryptBlock(inputBlock)
+	var outputData []byte
+	var i int
+
+	lastLen := len(data) % consts.BLOCK_SIZE
+
+	for i = 0; i < len(data)-lastLen; i += consts.BLOCK_SIZE {
+		encBlock, err := a.EncryptBlock(inputBlock)
+
+		if err != nil {
+			return nil, err
+		}
+
+		cipherBlock := g.GxorBlocks(data[i:i+consts.BLOCK_SIZE], encBlock)
+		outputData = append(outputData, cipherBlock...)
+
+		ctr.Increment()
+
+		var incrementedBlock []byte
+		incrementedBlock = append(incrementedBlock, nonce...)
+		incrementedBlock = append(incrementedBlock, ctr.Bytes[:]...)
+
+		copy(inputBlock, incrementedBlock)
+	}
+
+	lastEncBlock, err := a.EncryptBlock(inputBlock)
 
 	if err != nil {
 		return nil, err
 	}
 
-	outputBlock := g.GXorBlock(dataBlock, streamBlock)
-	ctr.Increment()
+	lastCipherBlock := g.GxorBlocks(data[i:], lastEncBlock[:lastLen])
+	outputData = append(outputData, lastCipherBlock...)
 
-	return outputBlock, nil
+	return outputData, nil
 }
 
-// TODO: Method scope.
-//       Break CTR/OFB/CFB into many functions so that decryption can just call
-//       encryption where possible -> less repeated code.
-//       Examples for CTR and GCM.
+func (a *AES256) EncryptGCM(plainText []byte, authData []byte) ([]byte, error) {
+	nonce := make([]byte, consts.NONCE_SIZE)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	ctr := counter.NewCounter()
+	ctr.Increment()
+
+	cipherText, err := a.CoreBlockCTR(plainText, nonce, ctr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tag, err := a.GMAC(cipherText, authData, nonce)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cipherText = append(nonce, cipherText...)
+	cipherText = append(cipherText, tag...)
+
+	return cipherText, nil
+}
+
+func (a *AES256) DecryptGCM(cipherText []byte, authData []byte) ([]byte, error) {
+	nonce := make([]byte, consts.NONCE_SIZE)
+	copy(nonce, cipherText[:consts.NONCE_SIZE])
+
+	tag := make([]byte, consts.TAG_SIZE)
+	copy(tag, cipherText[len(cipherText)-consts.TAG_SIZE:])
+
+	cipherText = cipherText[consts.NONCE_SIZE : len(cipherText)-consts.TAG_SIZE]
+
+	ctr := counter.NewCounter()
+	ctr.Increment()
+
+	plainText, err := a.CoreBlockCTR(cipherText, nonce, ctr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	testTag, err := a.GMAC(cipherText, authData, nonce)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tag, testTag) {
+		return nil, errors.New("GCM authentication failed: Invalid authentication tag")
+	}
+
+	return plainText, nil
+}
+
+func (a *AES256) GMAC(cipherData []byte, authData []byte, nonce []byte) ([]byte, error) {
+	if len(nonce) != consts.NONCE_SIZE {
+		return nil, errors.New("invalid nonce size")
+	}
+
+	hashSubKey := make([]byte, consts.BLOCK_SIZE)
+	hashSubKey, err := a.EncryptBlock(hashSubKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	preCtr := counter.NewCounter()
+	preCtr.Increment()
+
+	cipherPadding := make([]byte, 16*int(math.Ceil(float64(8*len(cipherData))/128.0))-len(cipherData))
+	authPadding := make([]byte, 16*int(math.Ceil(float64(8*len(authData))/128.0))-len(authData))
+
+	lenC := make([]byte, 8)
+	lenA := make([]byte, 8)
+	binary.BigEndian.PutUint64(lenC, uint64(len(cipherData)))
+	binary.BigEndian.PutUint64(lenA, uint64(len(authData)))
+
+	paddedAuth := append(authData, authPadding...)
+	paddedCipher := append(cipherData, cipherPadding...)
+	totalLen := append(lenA, lenC...)
+	hashData := append(append(paddedAuth, paddedCipher...), totalLen...)
+
+	s := g.Ghash(hashData, hashSubKey)
+	tag, err := a.CoreBlockCTR(s, nonce, preCtr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tag[:consts.TAG_SIZE], nil
+}

@@ -31,7 +31,7 @@ func Gmul(a byte, b byte) byte {
 	return p
 }
 
-func GXorBlock(a []byte, b []byte) []byte {
+func GxorBlocks(a []byte, b []byte) []byte {
 	var result []byte
 
 	for i, val := range a {
@@ -61,7 +61,7 @@ func Ghash(x []byte, h []byte) []byte {
 	hash := make([]byte, consts.BLOCK_SIZE)
 
 	for i := 0; i < len(x); i += consts.BLOCK_SIZE {
-		hash = GXorBlock(x[i:i+consts.BLOCK_SIZE], hash)
+		hash = GxorBlocks(x[i:i+consts.BLOCK_SIZE], hash)
 		hash = GmulBlocks(hash, h)
 	}
 

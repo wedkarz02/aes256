@@ -12,4 +12,5 @@ const (
 	IV_SIZE      = 16
 	NONCE_SIZE   = 12
 	COUNTER_SIZE = BLOCK_SIZE - NONCE_SIZE
+	TAG_SIZE     = 16
 )
