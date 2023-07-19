@@ -772,15 +772,6 @@ func (a *AES256) DecryptGCM(cipherText []byte, authData []byte) ([]byte, error) 
 
 	cipherText = cipherText[consts.NONCE_SIZE : len(cipherText)-consts.TAG_SIZE]
 
-	ctr := counter.NewCounter()
-	ctr.Increment()
-
-	plainText, err := a.coreBlockCTR(cipherText, nonce, ctr)
-
-	if err != nil {
-		return nil, err
-	}
-
 	testTag, err := a.GMAC(cipherText, authData, nonce)
 
 	if err != nil {
@@ -789,6 +780,15 @@ func (a *AES256) DecryptGCM(cipherText []byte, authData []byte) ([]byte, error) 
 
 	if !bytes.Equal(tag, testTag) {
 		return nil, errors.New("GCM authentication failed: Invalid authentication tag")
+	}
+
+	ctr := counter.NewCounter()
+	ctr.Increment()
+
+	plainText, err := a.coreBlockCTR(cipherText, nonce, ctr)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return plainText, nil
