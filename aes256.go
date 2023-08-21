@@ -69,6 +69,18 @@ func NewAES256(k []byte) (*AES256, error) {
 	return &a, nil
 }
 
+// ClearKey sets all bytes of Key and ExpandedKey to 0x00
+// to make sure that they can't be retrieved from memory.
+func (a *AES256) ClearKey() {
+	for i := range a.Key {
+		a.Key[i] = 0x00
+	}
+
+	for i := range a.expandedKey {
+		a.expandedKey[i] = 0x00
+	}
+}
+
 // NewSHA256 returns a hashed byte slice of the input.
 // Used to make sure that the key is exactly 32 bytes.
 //
