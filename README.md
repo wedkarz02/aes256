@@ -51,7 +51,7 @@ func main() {
     cipher, err := aes256go.NewAES256(key)
 
     // It is strongly recommended to wipe the key from memory at the end.
-	defer cipher.ClearKey()
+    defer cipher.ClearKey()
 
     // Make sure to check for any errors.
     if err != nil {
