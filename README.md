@@ -11,7 +11,7 @@ Current version provides access to raw block encryption as well as these modes o
  * CBC - Cipher Block Chaining
  * CFB - Cipher Feedback
  * OFB - Output Feedback
- * CTR - Counter
+ * CTR - Counter Mode
  * GCM - Galois Counter Mode
 
 As always, I do not recommend using this package for anything that needs actual security.
@@ -80,6 +80,12 @@ $ go mod tidy
 ```
 
 For more examples, see [aes256go/examples](https://github.com/wedkarz02/aes256go/tree/main/examples).
+
+# Testing
+To test this package use the ``go test`` command from the root directory:
+```bash
+$ go test -v
+```
 
 # Documentation
 For more documentation, see [pkg.go.dev](https://pkg.go.dev/github.com/wedkarz02/aes256go).
